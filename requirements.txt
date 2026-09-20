@@ -1,0 +1,9 @@
+Django==5.2.17
+djangorestframework==3.18.1
+gunicorn==26.2.0
+psycopg[binary]==3.3.6
+opentelemetry-distro==0.65b0
+opentelemetry-exporter-otlp==1.44.0
+opentelemetry-instrumentation-django==0.65b0
+opentelemetry-instrumentation-logging==0.65b0
+opentelemetry-instrumentation-psycopg==0.65b0
