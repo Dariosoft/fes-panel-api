@@ -1,3 +1,17 @@
+FROM python:3.14.7-slim-trixie AS verify
+ENV PYTHONDONTWRITEBYTECODE=1 DJANGO_SETTINGS_MODULE=config.settings
+WORKDIR /app
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --requirement requirements-dev.txt
+COPY manage.py pyproject.toml ./
+COPY config ./config
+COPY shops ./shops
+RUN python -m ruff check . \
+    && python -m ruff format --check . \
+    && python manage.py check \
+    && python manage.py makemigrations --check --dry-run \
+    && python manage.py test
+
 FROM python:3.14.7-slim-trixie
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 \
     DJANGO_SETTINGS_MODULE=config.settings HOME=/tmp \
@@ -11,7 +25,9 @@ RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home --sh
 WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --requirement requirements.txt
-COPY --chown=10001:10001 . .
+COPY --from=verify --chown=10001:10001 /app/manage.py ./manage.py
+COPY --from=verify --chown=10001:10001 /app/config ./config
+COPY --from=verify --chown=10001:10001 /app/shops ./shops
 USER 10001:10001
 EXPOSE 8000
 CMD ["opentelemetry-instrument", "gunicorn", "config.wsgi:application", "--bind=0.0.0.0:8000", "--workers=2", "--threads=2", "--access-logfile=-", "--error-logfile=-"]

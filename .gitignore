@@ -4,5 +4,6 @@ __pycache__/
 .env
 .coverage
 .pytest_cache/
+.ruff_cache/
 staticfiles/
 .DS_Store
