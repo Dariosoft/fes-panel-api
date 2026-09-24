@@ -1,9 +1,9 @@
 ---
-name: spec-taks
+name: spec-tasks
 description: Use this skill to generate a step-by-step implementation of a technical plan.
 ---
 
-# Spec Taks
+# Spec Tasks
 
 Step-by-step implementation of a technical plan.
 
