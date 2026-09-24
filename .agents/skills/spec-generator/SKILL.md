@@ -1,12 +1,13 @@
 ---
 name: spec-generator
-description: Use this skill when the user asks to create, write, or review a feature specification (spec). It guides a requirements interview and produces a spec.md following the team template. Generated specs are always written in Spanish.
+description: Use this skill when the user asks to create, write, or review a feature specification (spec). It writes spec.md immediately from the available context, leaves open questions as [NECESITA ACLARACIÓN], and writes concerns.md beside it ordered by necessity only when at least one question remains. Generated specs are always written in Spanish.
 ---
 
 # Spec generator
 
-Turn a vague idea into an agreed specification. The spec is the
+Turn a vague idea into a specification. The spec is the
 contract: if something is not here, it is not implemented.
+Open questions stay visible; they are not a reason to wait.
 
 ## Language of the spec
 
@@ -14,32 +15,36 @@ Write the entire `spec.md` in **Spanish**: section titles, placeholders
 filled in, user stories, EARS requirements, notes, and
 `[NECESITA ACLARACIÓN]` markers. Do not mix English into the spec body.
 Copy headings and EARS patterns from `spec-template.md` as-is.
-The interview with the user may use the conversation language; the
-written spec must still be Spanish.
+Write `concerns.md` in Spanish as well.
 
 ## Process
 
 1. **Read the context.** `docs/constitution.md` if it exists, and previous specs
    in `specs/` so you respect conventions and do not contradict what was already agreed.
-2. **Interview the user.** Ask questions **ONE at a TIME**, at most 6, waiting
-   for an answer before the next one. Focus on edge cases, error behavior,
-   and what is out of scope. Do not propose technical solutions: if the
-   user asks "how would you do it?", redirect to the WHAT.
-   Prioritize questions whose answer changes what needs to be built; skip
-   those with an obvious default answer.
-3. **Choose the number.** You may receive an implementation number in 3-digit format. 
-   If not, look at `specs/` and use the next free number with three digits: `specs/NNN-<name-in-kebab-case>/spec.md` 
+2. **Write now.** Do not interview and do not wait for confirmation before
+   creating the files. Use the issue, the conversation, and the docs you
+   already have. Where an answer would change what gets built and you do not
+   have it, leave the gap open. Do not invent it. Do not propose technical
+   solutions: the spec stays on the WHAT.
+3. **Choose the number.** You may receive an implementation number in 3-digit format.
+   If not, look at `specs/` and use the next free number with three digits: `specs/NNN-<name-in-kebab-case>/spec.md`
    (Only the created folder must be in English).
-4. **Write** using `spec-template.md` from this skill, without skipping
+4. **Write `spec.md`** using `spec-template.md` from this skill, without skipping
    sections. Keep every section title in Spanish as in the template.
    Acceptance criteria **always in EARS notation in Spanish**, numbered
    as RF-1, RF-2, … Each requirement must be verifiable: if you cannot think of
    how to check it, it is poorly written.
-5. **Mark what you do not know** as `[NECESITA ACLARACIÓN: pregunta concreta]`.
+5. **Mark what you do not know** as `[NECESITA ACLARACIÓN: pregunta concreta]`
+   in the spec, including the "Dudas abiertas" section.
    Never fill a gap by inventing: a visible gap is information,
    a silent assumption is debt.
-6. **Ask for explicit approval** when finished. Do not move on to the plan or write
-   code until you have it.
+6. **Write `concerns.md` only when there is at least one open doubt**, in the
+   same folder as `spec.md`. If nothing is open, do not create the file.
+   List every open doubt, one per item, ordered by necessity: the doubt
+   whose answer most changes what must be built comes first. Each item
+   repeats the `[NECESITA ACLARACIÓN: pregunta concreta]` text from the spec
+   and says why that answer is needed.
+7. Do not start the plan or write code from this skill.
 
 ## Rules
 
