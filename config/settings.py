@@ -13,6 +13,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "rest_framework",
     "shops",
+    "identity",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -34,3 +35,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
 }
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# account-api client (no secrets; base URL and timeouts only)
+ACCOUNT_API_BASE_URL = os.environ.get("ACCOUNT_API_BASE_URL", "http://localhost:8080")
+ACCOUNT_API_TIMEOUT_SECONDS = float(os.environ.get("ACCOUNT_API_TIMEOUT_SECONDS", "5"))

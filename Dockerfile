@@ -6,6 +6,7 @@ RUN pip install --requirement requirements-dev.txt
 COPY manage.py pyproject.toml ./
 COPY config ./config
 COPY shops ./shops
+COPY identity ./identity
 RUN python -m ruff check . \
     && python -m ruff format --check . \
     && python manage.py check \
@@ -28,6 +29,7 @@ RUN pip install --requirement requirements.txt
 COPY --from=verify --chown=10001:10001 /app/manage.py ./manage.py
 COPY --from=verify --chown=10001:10001 /app/config ./config
 COPY --from=verify --chown=10001:10001 /app/shops ./shops
+COPY --from=verify --chown=10001:10001 /app/identity ./identity
 USER 10001:10001
 EXPOSE 8000
 CMD ["opentelemetry-instrument", "gunicorn", "config.wsgi:application", "--bind=0.0.0.0:8000", "--workers=2", "--threads=2", "--access-logfile=-", "--error-logfile=-"]
