@@ -20,6 +20,7 @@ Persiste en la base `panel`, expone `/panel` y health checks, y se ejecuta con G
 
 ## Reglas
 - Lee la skill `/django-patterns` y la spec activa, si existe, antes de tocar código.
+- Usa `/clean-architecture` al diseñar o modificar capas, límites, dependencias, casos de uso o adaptadores.
 - Solo posee datos de tiendas, vendedores y membresías; no repliques productos, pedidos ni pagos como fuente de verdad.
 - Consume las APIs de dominio en lugar de acceder a sus bases o tablas.
 - Conserva `/panel`, `/health/live` y `/health/ready`, además de la configuración por variables de entorno.
@@ -29,6 +30,7 @@ Persiste en la base `panel`, expone `/panel` y health checks, y se ejecuta con G
 - Los manifiestos y secretos pertenecen a `infra`; coordina allí cambios de puerto, ruta o configuración.
 
 ## Al terminar cualquier tarea
+- Tras cambios no triviales de código de producción, aplica `/clean-code-guard` antes de finalizar.
 - Ejecuta `make verify`; incluye Ruff, formato, checks de Django, migraciones y tests.
 - Añade tests y migraciones para todo cambio de comportamiento o modelo.
 - Verifica los health checks si modificas base de datos, middleware, settings o arranque.
