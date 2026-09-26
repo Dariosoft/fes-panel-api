@@ -1,0 +1,239 @@
+# Adds issues to the Friendly E-Shop board and moves Status.
+# A linked pull request is not added. Its issue moves to Doing.
+# Secret ADD_TO_PROJECT_PAT: classic token with `repo` and `project`, or a
+# fine-grained token with organization Projects (read and write), Issues (read),
+# and Pull requests (read). An organization secret shared with these
+# repositories is enough.
+name: Auto Add to Project
+
+on:
+  issues:
+    types: [opened, reopened, transferred, closed]
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: project-board-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  add-to-project:
+    name: Sync issue with Friendly E-Shop project
+    if: github.event_name == 'pull_request' || github.event.issue.pull_request == null
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue to project
+        if: github.event_name == 'issues' && github.event.action != 'closed'
+        uses: actions/add-to-project@v2
+        with:
+          project-url: https://github.com/orgs/Dariosoft/projects/2
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+
+      - name: Update status
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          script: |
+            const projectOwner = "Dariosoft";
+            const projectNumber = 2;
+            const statusOptions = {
+              todo: ["todo", "to do", "por hacer", "backlog"],
+              doing: ["doing", "in progress", "en progreso"],
+              done: ["done", "listo", "hecho", "completed", "completado"],
+            };
+            const linkPattern = /(?:^|[^\w])(close[sd]?|fix(?:es|ed)?|resolve[sd]?)\s*:?\s*(?:https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/issues\/(\d+)|([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)#(\d+)|#(\d+))/gi;
+
+            function normalize(name) {
+              return name
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-zA-Z0-9]+/g, " ")
+                .trim()
+                .toLowerCase();
+            }
+
+            let cachedProject;
+
+            async function loadProject() {
+              if (cachedProject) return cachedProject;
+
+              const projectData = await github.graphql(
+                `query($owner: String!, $number: Int!) {
+                  organization(login: $owner) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 50) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options { id name }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`,
+                { owner: projectOwner, number: projectNumber }
+              );
+
+              const project = projectData.organization?.projectV2;
+              if (!project) {
+                throw new Error(
+                  `Cannot read https://github.com/orgs/${projectOwner}/projects/${projectNumber}. The token needs access to organization projects.`
+                );
+              }
+
+              const singleSelectFields = project.fields.nodes.filter((field) => field?.options);
+              const statusField =
+                singleSelectFields.find((field) => normalize(field.name) === "status") ??
+                singleSelectFields.find((field) =>
+                  field.options.some((option) =>
+                    ["todo", "doing", "done", "in progress"].includes(normalize(option.name))
+                  )
+                );
+
+              if (!statusField) throw new Error("The project has no Status field.");
+              cachedProject = { project, statusField };
+              return cachedProject;
+            }
+
+            async function setStatus(contentId, groups) {
+              const { project, statusField } = await loadProject();
+              const matchedOption = groups
+                .flatMap((group) => statusOptions[group])
+                .map((candidate) =>
+                  statusField.options.find((option) => normalize(option.name) === candidate)
+                )
+                .find(Boolean);
+
+              const added = await github.graphql(
+                `mutation($projectId: ID!, $contentId: ID!) {
+                  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                    item { id }
+                  }
+                }`,
+                { projectId: project.id, contentId }
+              );
+
+              if (!matchedOption) {
+                const available = statusField.options.map((option) => option.name).join(", ");
+                throw new Error(
+                  `Added to the project, but no Status option matches ${groups.join(" -> ")}. Options on the project: ${available}`
+                );
+              }
+
+              await github.graphql(
+                `mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }) {
+                    projectV2Item { id }
+                  }
+                }`,
+                {
+                  projectId: project.id,
+                  itemId: added.addProjectV2ItemById.item.id,
+                  fieldId: statusField.id,
+                  optionId: matchedOption.id,
+                }
+              );
+
+              core.info(`Set Status to "${matchedOption.name}".`);
+            }
+
+            function linkedIssueRefs(pullRequest) {
+              const text = `${pullRequest.title ?? ""}\n${pullRequest.body ?? ""}`;
+              const refs = [];
+              for (const match of text.matchAll(linkPattern)) {
+                const owner = match[2] || match[5] || context.repo.owner;
+                const name = match[3] || match[6] || context.repo.repo;
+                const number = Number(match[4] || match[7] || match[8]);
+                refs.push({ owner, name, number });
+              }
+              return refs;
+            }
+
+            async function linkedOpenIssues(pullRequest) {
+              const listed = await github.graphql(
+                `query($id: ID!) {
+                  node(id: $id) {
+                    ... on PullRequest {
+                      closingIssuesReferences(first: 20) {
+                        nodes { id state number repository { nameWithOwner } }
+                      }
+                    }
+                  }
+                }`,
+                { id: pullRequest.node_id }
+              );
+
+              const issues = new Map();
+              for (const issue of listed.node?.closingIssuesReferences?.nodes ?? []) {
+                if (issue?.state === "OPEN") issues.set(issue.id, issue);
+              }
+
+              for (const ref of linkedIssueRefs(pullRequest)) {
+                try {
+                  const found = await github.graphql(
+                    `query($owner: String!, $name: String!, $number: Int!) {
+                      repository(owner: $owner, name: $name) {
+                        issue(number: $number) { id state number repository { nameWithOwner } }
+                      }
+                    }`,
+                    ref
+                  );
+                  const issue = found.repository?.issue;
+                  if (issue?.state === "OPEN") issues.set(issue.id, issue);
+                } catch (error) {
+                  core.warning(`Could not read ${ref.owner}/${ref.name}#${ref.number}: ${error.message}`);
+                }
+              }
+
+              return [...issues.values()];
+            }
+
+            try {
+              if (context.eventName === "pull_request") {
+                const issues = await linkedOpenIssues(context.payload.pull_request);
+                if (issues.length === 0) {
+                  core.info("This pull request is not linked to an open issue.");
+                  return;
+                }
+                for (const issue of issues) {
+                  core.info(`Moving ${issue.repository.nameWithOwner}#${issue.number} to Doing.`);
+                  await setStatus(issue.id, ["doing"]);
+                }
+                return;
+              }
+
+              const issue = context.payload.issue;
+              if (context.payload.action === "closed") {
+                await setStatus(issue.node_id, ["done"]);
+                return;
+              }
+
+              const references = await github.graphql(
+                `query($id: ID!) {
+                  node(id: $id) {
+                    ... on Issue {
+                      closedByPullRequestsReferences(first: 10) {
+                        nodes { state }
+                      }
+                    }
+                  }
+                }`,
+                { id: issue.node_id }
+              );
+              const hasOpenPullRequest = (references.node?.closedByPullRequestsReferences?.nodes ?? [])
+                .some((pullRequest) => pullRequest.state === "OPEN");
+              await setStatus(issue.node_id, hasOpenPullRequest ? ["doing"] : ["todo"]);
+            } catch (error) {
+              core.setFailed(error.message);
+            }
