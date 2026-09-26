@@ -6,20 +6,21 @@ Persiste en la base `panel`, expone `/panel` y health checks, y se ejecuta con G
 
 ## Comandos
 - Preparar: `python -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt`
-- Ejecutar: `python manage.py runserver 0.0.0.0:8000`
+- Ejecutar: `python src/manage.py runserver 0.0.0.0:8000` cuando el layout `src/` esté aplicado; usa `python manage.py runserver 0.0.0.0:8000` solo mientras dure la migración actual.
 - Lint/formato: `make lint`
 - Tests: `make test`
 - Verificación completa: `make verify`
 
 ## Estilo y convenciones
-- Usa Python 3.14, Django 5.2 LTS y DRF; mantén la configuración global en `config` y el dominio en apps.
+- Usa Python 3.14, Django 5.2 LTS y DRF; el layout objetivo es código importable en `src/` y pruebas en `tests/`.
+- Mantén la configuración global en `src/config`, health checks compartidos en `src/common/health` y el dominio en apps por capacidad de negocio.
 - Nombres, código y documentación técnica en inglés; mensajes visibles al usuario en español.
 - Respeta `pyproject.toml`: Ruff valida imports, errores comunes y formato con líneas de hasta 100 caracteres.
 - Usa ORM y migraciones de Django; crea una migración nueva por cada cambio persistente.
 - Mantén las vistas pequeñas y mueve reglas reutilizables a servicios del dominio correspondiente.
 
 ## Reglas
-- Lee la skill `/django-patterns` y la spec activa, si existe, antes de tocar código.
+- Lee la skill `/panel-api-architecture`, `/django-patterns` y la spec activa, si existe, antes de tocar código.
 - Usa `/clean-architecture` al diseñar o modificar capas, límites, dependencias, casos de uso o adaptadores.
 - Solo posee datos de tiendas, vendedores y membresías; no repliques productos, pedidos ni pagos como fuente de verdad.
 - Consume las APIs de dominio en lugar de acceder a sus bases o tablas.
