@@ -15,6 +15,6 @@ filled in, user stories, EARS requirements and notes.
 ## Process
 
 1. You must receive the reference or name of a `spec.md`. Wait for this input; do not continue if you do not receive it.
-2. Once obtained, read it and also read `@docs/constitution.md`. Do not write code.
+2. Take into account the skill mentioned in `AGENTS.md` for the planning.
 3. Generate `plan.md` next to the spec, with the features explained from the received spec.
-Everything must respect `@docs/constitution.md` and cover all RFs. Mark which RF each part covers.
+Everything must respect the mentionated skill and cover all RFs. Mark which RF each part covers.
