@@ -5,7 +5,9 @@ COPY requirements.txt requirements-dev.txt ./
 RUN pip install --requirement requirements-dev.txt
 COPY manage.py pyproject.toml ./
 COPY config ./config
+COPY identity ./identity
 COPY shops ./shops
+COPY tests ./tests
 RUN python -m ruff check . \
     && python -m ruff format --check . \
     && python manage.py check \
@@ -27,6 +29,7 @@ COPY requirements.txt ./
 RUN pip install --requirement requirements.txt
 COPY --from=verify --chown=10001:10001 /app/manage.py ./manage.py
 COPY --from=verify --chown=10001:10001 /app/config ./config
+COPY --from=verify --chown=10001:10001 /app/identity ./identity
 COPY --from=verify --chown=10001:10001 /app/shops ./shops
 USER 10001:10001
 EXPOSE 8000

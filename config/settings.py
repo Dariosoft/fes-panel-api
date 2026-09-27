@@ -8,14 +8,29 @@ ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+ACCOUNT_API_BASE_URL = os.environ.get(
+    "ACCOUNT_API_BASE_URL",
+    "http://account-api.apps.svc.cluster.local:8080",
+).rstrip("/")
+ACCOUNTS_PUBLIC_BASE_URL = os.environ.get(
+    "ACCOUNTS_PUBLIC_BASE_URL",
+    ACCOUNT_API_BASE_URL,
+).rstrip("/")
+PANEL_PUBLIC_ORIGIN = os.environ.get("PANEL_PUBLIC_ORIGIN", "http://localhost:5174").rstrip("/")
+SESSION_COOKIE_DOMAIN = os.environ.get("SESSION_COOKIE_DOMAIN") or None
+ACCOUNT_API_TIMEOUT_SECONDS = float(os.environ.get("ACCOUNT_API_TIMEOUT_SECONDS", "5"))
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "corsheaders",
     "rest_framework",
+    "identity",
     "shops",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 TEMPLATES = []
@@ -33,4 +48,6 @@ DATABASES = {
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
 }
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [PANEL_PUBLIC_ORIGIN]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
