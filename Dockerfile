@@ -14,6 +14,18 @@ RUN python -m ruff check . \
     && python src/manage.py makemigrations --check --dry-run \
     && python src/manage.py test tests
 
+FROM python:3.14.7-slim-trixie AS dev
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 \
+    DJANGO_SETTINGS_MODULE=config.settings \
+    PYTHONPATH=/app/src \
+    HOME=/tmp
+RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home --shell /usr/sbin/nologin app
+WORKDIR /app
+COPY requirements.txt ./
+RUN pip install --requirement requirements.txt
+USER 10001:10001
+EXPOSE 8000
+
 FROM python:3.14.7-slim-trixie
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 \
     DJANGO_SETTINGS_MODULE=config.settings \
