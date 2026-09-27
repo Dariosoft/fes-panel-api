@@ -106,6 +106,8 @@ flowchart TB
 
 ## 3. Diagrama de clases (identity)
 
+El diagrama muestra relaciones arquitectónicas relevantes. Omite dependencias transitivas de DTOs, errores o tipos locales cuando ya están explicadas por una vista, caso de uso, gateway o cliente principal.
+
 ```mermaid
 classDiagram
   direction TB
@@ -182,12 +184,8 @@ classDiagram
   resolve_panel_session --> AccountSessionGateway
   logout_panel_session --> AccountSessionGateway
   AccountSessionClient ..|> AccountSessionGateway
-  AccountSessionClient --> SessionPayload
-  AccountSessionClient --> LogoutResult
   resolve_panel_session --> SessionPayload
   logout_panel_session --> LogoutPanelSessionResult
-  resolve_panel_session --> AccountServiceUnavailable
-  logout_panel_session --> AccountServiceUnavailable
   AccountSessionClient --> AccountServiceUnavailable
 ```
 
