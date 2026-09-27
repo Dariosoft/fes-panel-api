@@ -26,3 +26,21 @@ with the RFs it covers and a verifiable "Done when:" line. Use checkboxes.
 - Cite concrete paths, endpoints, cookies, env vars and JSON shapes as defined for this cut.
 - Do not invent types or layers outside the plan or this project's architecture.
 - If `uml.md` already exists, replace it so it matches this plan/tasks run.
+
+## UML Relationship Hygiene
+
+Class diagrams should communicate architecture, not reproduce every import or local variable type.
+
+Prefer architecturally meaningful relationships over exhaustive compile-time dependency graphs.
+
+Avoid duplicating transitive relationships when a clearer owner relationship already explains the dependency.
+
+Example: if `GoogleLoginService` depends on `GoogleOAuthClient`, and `GoogleOAuthClient` returns or maps `GoogleProfile`, show `GoogleLoginService --> GoogleOAuthClient` and `GoogleOAuthClient ..> GoogleProfile`; omit `GoogleLoginService ..> GoogleProfile` unless the service owns important rules around that profile type.
+
+For UML diagrams:
+
+- show fields, constructor collaborators, interfaces, adapters, repositories, clients, and framework-facing boundaries
+- show DTOs or records when they are public contracts or key outputs
+- omit transient local-variable types when their relationship is already explained by a repository, client, adapter, or returned contract
+- omit duplicated edges from a service to entities when the repository relationship already communicates ownership/access clearly
+- keep the diagram readable even if that means it is not a complete import graph
