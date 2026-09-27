@@ -1,6 +1,7 @@
 from django.urls import include, path
 
-from shops.views import live, panel, ready
+from common.health.views import live, ready
+from common.panel.views import panel
 
 urlpatterns = [
     path("panel", panel),

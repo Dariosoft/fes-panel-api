@@ -12,7 +12,7 @@ class DomainConstantsTests(unittest.TestCase):
         self.assertTrue(issubclass(AccountServiceUnavailable, Exception))
 
     def test_domain_module_has_no_django_or_shops_imports(self):
-        domain_root = Path(__file__).resolve().parents[2] / "identity" / "domain"
+        domain_root = Path(__file__).resolve().parents[2] / "src" / "identity" / "domain"
         forbidden = {"django", "rest_framework", "shops"}
         for path in domain_root.rglob("*.py"):
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))

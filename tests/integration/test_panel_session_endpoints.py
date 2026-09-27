@@ -4,9 +4,10 @@ from urllib.parse import parse_qs, urlparse
 from django.test import SimpleTestCase, override_settings
 from rest_framework.test import APIClient
 
+from common.health.views import live, ready
+from common.panel.views import panel
 from identity.application.dtos import LogoutResult, SessionPayload
 from identity.domain import SESSION_COOKIE_NAME, AccountServiceUnavailable
-from shops.views import live, panel, ready
 
 
 class _FakeGateway:

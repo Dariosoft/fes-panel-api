@@ -2,10 +2,6 @@ from django.db import connection
 from django.http import JsonResponse
 
 
-def panel(_request):
-    return JsonResponse({"service": "panel-api", "status": "ready", "shops": []})
-
-
 def live(_request):
     return JsonResponse({"status": "live"})
 

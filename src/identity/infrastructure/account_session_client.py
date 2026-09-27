@@ -1,8 +1,4 @@
-import json
-import urllib.error
-import urllib.request
-from typing import Any
-
+from common.http import JsonRequest, RemoteServiceError, request_json
 from identity.application.dtos import LogoutResult, SessionPayload
 from identity.domain.constants import SESSION_COOKIE_NAME
 from identity.domain.errors import AccountServiceUnavailable
@@ -30,28 +26,12 @@ class AccountSessionClient:
         method: str,
         path: str,
         fes_session: str | None,
-    ) -> tuple[int, dict[str, Any]]:
-        url = f"{self._base_url}{path}"
-        headers: dict[str, str] = {"Accept": "application/json"}
+    ) -> tuple[int, dict]:
+        headers: dict[str, str] = {}
         if fes_session:
             headers["Cookie"] = f"{SESSION_COOKIE_NAME}={fes_session}"
-        request = urllib.request.Request(url, method=method, headers=headers)
+        call = JsonRequest(method, path, self._timeout_seconds, headers)
         try:
-            with urllib.request.urlopen(request, timeout=self._timeout_seconds) as response:
-                status_code = response.getcode()
-                raw = response.read().decode("utf-8")
-        except urllib.error.HTTPError as exc:
-            if exc.code >= 500:
-                raise AccountServiceUnavailable from exc
-            raw = exc.read().decode("utf-8")
-            status_code = exc.code
-        except (TimeoutError, urllib.error.URLError, OSError) as exc:
+            return request_json(self._base_url, call)
+        except RemoteServiceError as exc:
             raise AccountServiceUnavailable from exc
-
-        try:
-            body = json.loads(raw) if raw else {}
-        except json.JSONDecodeError as exc:
-            raise AccountServiceUnavailable from exc
-        if not isinstance(body, dict):
-            raise AccountServiceUnavailable("accounts response was not an object")
-        return status_code, body

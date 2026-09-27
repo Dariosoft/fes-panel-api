@@ -6,7 +6,7 @@ Persiste en la base `panel`, expone `/panel` y health checks, y se ejecuta con G
 
 ## Comandos
 - Preparar: `python -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt`
-- Ejecutar: `python src/manage.py runserver 0.0.0.0:8000` cuando el layout `src/` esté aplicado; usa `python manage.py runserver 0.0.0.0:8000` solo mientras dure la migración actual.
+- Ejecutar: `python src/manage.py runserver 0.0.0.0:8000`
 - Lint/formato: `make lint`
 - Tests: `make test`
 - Verificación completa: `make verify`

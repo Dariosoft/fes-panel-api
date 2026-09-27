@@ -25,18 +25,11 @@ panel-api/
 │   │   └── wsgi.py
 │   ├── common/
 │   │   └── health/
-│   ├── identity/
-│   │   ├── api/
-│   │   ├── application/
-│   │   ├── domain/
-│   │   └── infrastructure/
-│   └── shops/
+│   └── identity/
 │       ├── api/
 │       ├── application/
 │       ├── domain/
-│       ├── infrastructure/
-│       ├── models.py
-│       └── migrations/
+│       └── infrastructure/
 ├── tests/
 │   ├── identity/
 │   ├── shops/
@@ -54,7 +47,7 @@ panel-api/
 
 Use feature-based Django apps with internal clean architecture boundaries.
 
-- Organize first by business capability: `identity`, `shops`, and future modules.
+- Organize first by business capability: `identity` today, and a new module when a capability exists.
 - Do not create global technical folders such as `controllers/`, `services/`,
   `repositories/`, `serializers/`, or `models/` at `src/` root.
 - Inside each module, organize by responsibility: `api`, `application`, `domain`,
@@ -117,9 +110,9 @@ Put business concepts and rules here.
 Typical files:
 
 ```text
-src/shops/domain/entities.py
-src/shops/domain/policies.py
-src/shops/domain/errors.py
+src/<module>/domain/entities.py
+src/<module>/domain/policies.py
+src/<module>/domain/errors.py
 ```
 
 ### `src/<module>/infrastructure/`
@@ -137,8 +130,8 @@ Put external system adapters here.
 Typical files:
 
 ```text
-src/identity/infrastructure/account_client.py
-src/shops/infrastructure/repositories.py
+src/identity/infrastructure/account_session_client.py
+src/<module>/infrastructure/repositories.py
 ```
 
 ### `src/<module>/models.py` and `src/<module>/migrations/`
@@ -159,7 +152,7 @@ Keep Django-owned persistence here.
 
 Put cross-module health checks here.
 
-- `/health/live` and `/health/ready` do not belong to `shops` or `identity`.
+- `/health/live` and `/health/ready` do not belong to `identity`.
 - Keep health views small and explicit.
 - Readiness may check database or required dependencies; liveness should avoid
   fragile dependency checks.
@@ -169,7 +162,7 @@ Put cross-module health checks here.
 Only place code here when it is truly shared across modules.
 
 - Do not create generic dumping grounds such as `common/utils.py`.
-- Prefer module-local helpers until at least two modules need the same concept.
+- `src/common/http.py` performs a JSON HTTP call. Each module adds its own headers and maps `RemoteServiceError` to its own error.
 - Shared code must be stable and domain-neutral.
 
 ## Tests Layout
@@ -179,7 +172,6 @@ All tests live under `tests/`, grouped by the module or test type.
 ```text
 tests/
 ├── identity/
-├── shops/
 ├── common/
 ├── integration/
 └── architecture/
@@ -264,8 +256,7 @@ affected tooling in the same change:
 - `Dockerfile` should copy `src/` and run from the correct working directory.
 - `DJANGO_SETTINGS_MODULE` should still point to `config.settings` if `src/` is on
   `PYTHONPATH`.
-- `INSTALLED_APPS` should keep stable app labels such as `identity` and `shops`
-  unless there is a deliberate migration plan.
+- `INSTALLED_APPS` should keep the stable app label `identity`.
 - Test discovery must include `tests/`.
 - Ruff and architecture tests must validate the new paths.
 

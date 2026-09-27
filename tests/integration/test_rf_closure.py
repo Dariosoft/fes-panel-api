@@ -11,10 +11,11 @@ from django.urls import resolve
 from rest_framework.permissions import AllowAny
 from rest_framework.test import APIClient
 
+from common.health.views import live, ready
+from common.panel.views import panel
 from identity.api.views import GoogleLoginRedirectView, PanelLogoutView, PanelSessionView
 from identity.domain import SESSION_COOKIE_NAME
 from identity.infrastructure.account_session_client import AccountSessionClient
-from shops.views import live, panel, ready
 
 
 class _AccountsHandler(BaseHTTPRequestHandler):

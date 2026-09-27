@@ -6,5 +6,5 @@ Django REST API for shop administration. It owns shop membership data and calls 
 python -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
-python manage.py test
+python src/manage.py test tests
 ```
