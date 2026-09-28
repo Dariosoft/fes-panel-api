@@ -5,7 +5,6 @@ from django.test import SimpleTestCase, override_settings
 from rest_framework.test import APIClient
 
 from common.health.views import live, ready
-from common.panel.views import panel
 from identity.application.dtos import LogoutResult, SessionPayload
 from identity.domain import SESSION_COOKIE_NAME, AccountServiceUnavailable
 
@@ -139,6 +138,5 @@ class PanelIdentityEndpointTests(SimpleTestCase):
     def test_existing_routes_resolve(self):
         from django.urls import resolve
 
-        self.assertEqual(resolve("/panel").func, panel)
         self.assertEqual(resolve("/health/live").func, live)
         self.assertEqual(resolve("/health/ready").func, ready)

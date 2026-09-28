@@ -12,7 +12,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.test import APIClient
 
 from common.health.views import live, ready
-from common.panel.views import panel
 from identity.api.views import GoogleLoginRedirectView, PanelLogoutView, PanelSessionView
 from identity.domain import SESSION_COOKIE_NAME
 from identity.infrastructure.account_session_client import AccountSessionClient
@@ -218,13 +217,9 @@ class RfCoverageSmokeTests(SimpleTestCase):
         self.assertEqual(response["Access-Control-Allow-Origin"], "https://panel.example.com")
         self.assertEqual(response["Access-Control-Allow-Credentials"], "true")
 
-    def test_health_and_panel_smoke(self):
-        self.assertEqual(resolve("/panel").func, panel)
+    def test_health_smoke(self):
         self.assertEqual(resolve("/health/live").func, live)
         self.assertEqual(resolve("/health/ready").func, ready)
         live_response = self.client.get("/health/live")
         self.assertEqual(live_response.status_code, 200)
         self.assertEqual(live_response.json(), {"status": "live"})
-        panel_response = self.client.get("/panel")
-        self.assertEqual(panel_response.status_code, 200)
-        self.assertEqual(panel_response.json()["service"], "panel-api")

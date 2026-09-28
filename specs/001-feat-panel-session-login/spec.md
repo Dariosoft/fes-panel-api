@@ -27,7 +27,7 @@ El panel necesita una puerta de acceso que reutilice la sesión compartida de cu
 - RF-7: EL SISTEMA permitirá el acceso al flujo de sesión del panel a cualquier cuenta de Google autenticada mediante la sesión compartida, sin exigir membresía de vendedor ni alta de tienda.
 - RF-8: EL SISTEMA usará `ACCOUNT_API_BASE_URL` como dirección base del servicio de cuentas interno.
 - RF-9: EL SISTEMA aceptará peticiones CORS con credenciales desde el origen del panel.
-- RF-10: EL SISTEMA conservará `GET /panel`, `GET /health/live` y `GET /health/ready`.
+- RF-10: EL SISTEMA conservará `GET /health/live` y `GET /health/ready`.
 - RF-11: EL SISTEMA usará, para `return_to` y para CORS, un único origen configurable por entorno: el host público del panel.
 - RF-12: SI el servicio de cuentas no está disponible o falla al consultar la sesión, ENTONCES EL SISTEMA responderá 503 con un cuerpo de error distinto del JSON de no autenticado.
 - RF-13: SI el servicio de cuentas no está disponible o falla al cerrar la sesión, ENTONCES EL SISTEMA responderá 503 con un cuerpo de error distinto del JSON de no autenticado y no borrará `fes_session`.
@@ -58,7 +58,7 @@ El panel necesita una puerta de acceso que reutilice la sesión compartida de cu
 ## Criterios de finalización
 
 - Todos los RF verificables con prueba automatizada o demostración manual del flujo principal (inicio vía Google, consulta de sesión y cierre).
-- `GET /panel`, `GET /health/live` y `GET /health/ready` siguen respondiendo tras el cambio.
+- `GET /health/live` y `GET /health/ready` siguen respondiendo tras el cambio.
 - Ninguna duda marcada como `[NECESITA ACLARACIÓN]` queda sin resolver o sin decisión explícita documentada en la spec.
 
 ## Dudas abiertas

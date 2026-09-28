@@ -2,7 +2,7 @@
 
 ## Proyecto
 API administrativa de Friendly E-Shop en Python, Django LTS y Django REST Framework. Posee tiendas y membresías del panel, y actúa como frontera hacia los servicios de dominio sin escribir sus tablas.
-Persiste en la base `panel`, expone `/panel` y health checks, y se ejecuta con Gunicorn instrumentado por OpenTelemetry.
+Persiste en la base `panel`, expone rutas bajo `/panel` y health checks, y se ejecuta con Gunicorn instrumentado por OpenTelemetry.
 
 ## Comandos
 - Preparar: `python -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt`
@@ -24,7 +24,7 @@ Persiste en la base `panel`, expone `/panel` y health checks, y se ejecuta con G
 - Usa `/clean-architecture` al diseñar o modificar capas, límites, dependencias, casos de uso o adaptadores.
 - Solo posee datos de tiendas, vendedores y membresías; no repliques productos, pedidos ni pagos como fuente de verdad.
 - Consume las APIs de dominio en lugar de acceder a sus bases o tablas.
-- Conserva `/panel`, `/health/live` y `/health/ready`, además de la configuración por variables de entorno.
+- Conserva las rutas bajo `/panel`, `/health/live` y `/health/ready`, además de la configuración por variables de entorno.
 - Keycloak y la identidad externa están diferidos; no añadas autenticación nueva sin una spec.
 - Mantén dependencias fijadas y nunca incluyas secretos en código o migraciones.
 - No omitas reglas ni añadas `noqa` para evitar corregir una violación sin justificarlo.

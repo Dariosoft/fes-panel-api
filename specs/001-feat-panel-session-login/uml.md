@@ -18,7 +18,6 @@ src/
 ├── config/                 # settings, urls, wsgi
 ├── common/
 │   ├── health/views.py     # GET /health/live, /health/ready
-│   ├── panel/views.py      # GET /panel
 │   └── http.py             # request_json / RemoteServiceError
 └── identity/
     ├── api/                # vistas DRF, urls, clear_session_cookie
@@ -50,7 +49,6 @@ flowchart TB
     end
 
     subgraph commonLayer [common]
-      PanelView[common.panel.views.panel]
       HealthLive[common.health.views.live]
       HealthReady[common.health.views.ready]
       HttpHelper[common.http.request_json]
@@ -77,12 +75,10 @@ flowchart TB
   UI -->|GET /panel/login/google| ApiViews
   UI -->|GET /panel/session| ApiViews
   UI -->|POST /panel/logout| ApiViews
-  UI -->|GET /panel| PanelView
   UI -->|health| HealthLive
   UI --> HealthReady
 
   Urls --> ApiViews
-  Urls --> PanelView
   Urls --> HealthLive
   Urls --> HealthReady
 

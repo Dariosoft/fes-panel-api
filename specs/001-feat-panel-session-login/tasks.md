@@ -25,8 +25,8 @@ código real en `src/` (identity + common; sin shops).
 
 - [x] **T4. Crear app `identity` con capas vacías y registro bajo `src/`**
   - Cubre: RF-6, RF-10
-  - Crear `src/identity/` con `apps.py` y paquetes `api/`, `application/`, `domain/`, `infrastructure/`; registrar en `INSTALLED_APPS`; health/panel en `src/common/`; Dockerfile copia `src/` y `tests/`. No añadir modelos ni migraciones de cuenta. Sin módulo `shops`.
-  - Done when: la app carga al arrancar, no hay modelo/migración de identidad, y `GET /panel`, `/health/live` y `/health/ready` responden desde `common`.
+  - Crear `src/identity/` con `apps.py` y paquetes `api/`, `application/`, `domain/`, `infrastructure/`; registrar en `INSTALLED_APPS`; health en `src/common/`; Dockerfile copia `src/` y `tests/`. No añadir modelos ni migraciones de cuenta. Sin módulo `shops`.
+  - Done when: la app carga al arrancar, no hay modelo/migración de identidad, y `/health/live` y `/health/ready` responden desde `common`.
 
 - [x] **T5. Domain: constantes y error de indisponibilidad**
   - Cubre: RF-6, RF-7, RF-12, RF-13
@@ -79,10 +79,10 @@ código real en `src/` (identity + common; sin shops).
   - AllowAny: invoca `logout_panel_session`; si el caso lo autoriza, `clear_session_cookie` (Path `/`, HttpOnly, SameSite=Lax, Domain; Secure vía `getattr(SESSION_COOKIE_SECURE, False)`); en 503 no borrar cookie; mensaje 503 en español. El panel proxy status/body de cuentas (p. ej. 204 vacío → `{}`); los tests pueden asumir 200 + `authenticated: false`.
   - Done when: logout OK borra cookie en la respuesta del panel; sin sesión → OK + borra; fallo de cuentas → 503 y cookie intacta.
 
-- [x] **T14. Cablear URLs sin sombrear rutas existentes**
+- [x] **T14. Cablear URLs de panel y health**
   - Cubre: RF-10
-  - En `src/config/urls.py`: `panel` y health desde `common`; `include("identity.api.urls")` bajo `panel/` para login/session/logout, sin alterar el contrato de `GET /panel`, `GET /health/live`, `GET /health/ready`.
-  - Done when: las tres nuevas rutas resuelven y las tres rutas existentes siguen respondiendo desde `common`.
+  - En `src/config/urls.py`: health desde `common`; `include("identity.api.urls")` bajo `panel/` para login/session/logout.
+  - Done when: las tres rutas de sesión resuelven y los health checks siguen respondiendo desde `common`.
 
 ## Pruebas de cierre y verificación
 
@@ -103,7 +103,7 @@ código real en `src/` (identity + common; sin shops).
 
 - [x] **T18. Tests de no persistencia, AllowAny, CORS y smoke de health**
   - Cubre: RF-6, RF-7, RF-9, RF-10
-  - Verificar ausencia de modelo/migración de cuenta en identity; endpoints AllowAny sin módulo shops; CORS origen+credentials; smoke de `/panel`, `/health/live`, `/health/ready` desde `common`.
+  - Verificar ausencia de modelo/migración de cuenta en identity; endpoints AllowAny sin módulo shops; CORS origen+credentials; smoke de `/health/live`, `/health/ready` desde `common`.
   - Done when: esos asserts/smoke pasan y documentan cobertura de RF-6, RF-7, RF-9 y RF-10.
 
 - [x] **T19. Cierre con `make verify`**

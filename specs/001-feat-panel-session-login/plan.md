@@ -2,7 +2,7 @@
 
 Plan técnico de implementación de `specs/001-feat-panel-session-login/spec.md`.
 Refleja el código real en `src/` de la rama `001/feat-panel-session-login`
-(`identity` + `common/{health,panel,http}`; sin módulo `shops`).
+(`identity` + `common/{health,http}`; sin módulo `shops`).
 
 ## 1. Alcance y principios
 
@@ -11,8 +11,8 @@ Refleja el código real en `src/` de la rama `001/feat-panel-session-login`
   cierra la sesión compartida. **(RF-6, RF-7)**
 - No hay modelos ni migraciones de cuenta/usuario en este corte. **(RF-6)**
 - No se exige membresía de vendedor ni alta de tienda en este flujo. **(RF-7)**
-- Se conservan sin cambio de contrato `GET /panel`, `GET /health/live` y
-  `GET /health/ready` (implementados en `common.panel` y `common.health`).
+- Se conservan sin cambio de contrato las rutas de sesión bajo `/panel` y
+  `GET /health/live` / `GET /health/ready` (implementados en `identity.api` y `common.health`).
   **(RF-10)**
 - Dependencias hacia dentro: `api → application → domain`; el cliente HTTP de
   cuentas vive en `infrastructure` e implementa el puerto `AccountSessionGateway`
@@ -27,7 +27,6 @@ src/
 ├── config/                 # settings, urls, wsgi
 ├── common/
 │   ├── health/views.py     # live / ready
-│   ├── panel/views.py      # GET /panel
 │   └── http.py             # request_json, RemoteServiceError
 └── identity/
     ├── apps.py
@@ -42,10 +41,9 @@ tests/
 ```
 
 - `identity` está en `INSTALLED_APPS`.
-- `config/urls.py` monta `path("panel", panel)`,
-  `path("panel/", include("identity.api.urls"))` y las rutas de health.
+- `config/urls.py` monta `path("panel/", include("identity.api.urls"))` y las rutas de health.
 - El `Dockerfile` copia `src/` y `tests/`; no existe app `shops`.
-- Health y panel viven en `common/`, no en `shops.views`. **(RF-10)**
+- Health vive en `common/`; las rutas del panel viven en `identity.api`, no en `shops.views`. **(RF-10)**
 
 ## 3. Configuración por entorno
 
@@ -117,13 +115,11 @@ Dependencias:
 - Si account-api falla (timeout/5xx/red): **503** en español, **sin** borrar
   `fes_session`. **(RF-13)**
 
-### 4.4 Rutas existentes — **RF-10**
+### 4.4 Rutas conservadas — **RF-10**
 
-- `GET /panel` → `common.panel.views.panel`
 - `GET /health/live` → `common.health.views.live`
 - `GET /health/ready` → `common.health.views.ready`
-- Nuevas rutas: `panel/login/google`, `panel/session`, `panel/logout` (no
-  sombrean `GET /panel` exacto).
+- Rutas del panel: `panel/login/google`, `panel/session`, `panel/logout`.
 
 ## 5. Capas internas (clean architecture)
 
@@ -205,20 +201,20 @@ Puerto `AccountSessionGateway`:
 | Sin persistencia | No hay modelo/migración de cuenta en identity | **RF-6** |
 | Sin membresía | Endpoints AllowAny; no hay módulo shops | **RF-7** |
 | CORS | Origen del panel + credentials | **RF-9, RF-11** |
-| Smoke | `GET /panel`, `/health/live`, `/health/ready` desde `common` | **RF-10** |
+| Smoke | `/health/live`, `/health/ready` desde `common` | **RF-10** |
 
 Criterios de automatización:
 
 - Unitarios de application/domain con gateway fake.
 - Unitarios del cliente HTTP / `common.http` con servidor mock.
-- Integración DRF/`APIClient` para los tres endpoints y conservación de health/panel.
+- Integración DRF/`APIClient` para los tres endpoints y conservación de health.
 - Ejecutar `make verify` al cerrar la implementación.
 
 ## 10. Orden de implementación sugerido
 
 1. Layout `src/` + settings (`ACCOUNT_API_BASE_URL`, `ACCOUNTS_PUBLIC_BASE_URL`,
    `PANEL_PUBLIC_ORIGIN`) + CORS (**RF-8, RF-9, RF-11**).
-2. `common/{health,panel,http}` y módulo `identity` con capas (**RF-8, RF-10, RF-12, RF-13**).
+2. `common/{health,http}` y módulo `identity` con capas (**RF-8, RF-10, RF-12, RF-13**).
 3. Casos de uso session/logout/redirect (**RF-1–RF-5, RF-12–RF-15**).
 4. Vistas y rutas `/panel/login/google`, `/panel/session`, `/panel/logout`
    (**RF-1–RF-5, RF-7, RF-10**).
@@ -238,7 +234,7 @@ Criterios de automatización:
 | RF-7 | AllowAny; sin chequeo de membresía/tienda / sin shops |
 | RF-8 | Proxy con `ACCOUNT_API_BASE_URL`; redirect con `ACCOUNTS_PUBLIC_BASE_URL` |
 | RF-9 | CORS credentials desde origen del panel |
-| RF-10 | Rutas `/panel`, `/health/live`, `/health/ready` en `common` |
+| RF-10 | Health checks `/health/live`, `/health/ready` en `common` |
 | RF-11 | Un solo `PANEL_PUBLIC_ORIGIN` para `return_to` y CORS |
 | RF-12 | 503 distinto de JSON anónimo en fallo de consulta |
 | RF-13 | 503 sin borrar cookie en fallo de logout |
