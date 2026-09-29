@@ -1,3 +1,4 @@
+from common.contracts.account_api import ACCOUNT_LOGOUT_PATH, ACCOUNT_SESSION_PATH
 from common.http import JsonRequest, RemoteServiceError, request_json
 from identity.application.dtos import LogoutResult, SessionPayload
 from identity.domain.constants import SESSION_COOKIE_NAME
@@ -10,11 +11,11 @@ class AccountSessionClient:
         self._timeout_seconds = timeout_seconds
 
     def get_session(self, fes_session: str | None) -> SessionPayload:
-        status_code, body = self._request("GET", "/accounts/session", fes_session)
+        status_code, body = self._request("GET", ACCOUNT_SESSION_PATH, fes_session)
         return SessionPayload(status_code=status_code, body=body)
 
     def logout(self, fes_session: str | None) -> LogoutResult:
-        status_code, body = self._request("POST", "/accounts/logout", fes_session)
+        status_code, body = self._request("POST", ACCOUNT_LOGOUT_PATH, fes_session)
         return LogoutResult(
             status_code=status_code,
             body=body,
