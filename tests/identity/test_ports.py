@@ -1,6 +1,7 @@
 import unittest
 
-from identity.application import AccountSessionGateway, LogoutResult, SessionPayload
+from identity.dtos import LogoutResult, SessionPayload
+from identity.ports import AccountSessionGateway
 
 
 class FakeAccountSessionGateway:

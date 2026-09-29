@@ -21,7 +21,7 @@ El panel necesita una puerta de acceso que reutilice la sesión compartida de cu
 - RF-1: CUANDO un navegador solicita `GET /panel/login/google`, EL SISTEMA redirigirá al navegador a `GET /accounts/login/google` con el parámetro `return_to` igual al origen público del panel.
 - RF-2: CUANDO un cliente solicita `GET /panel/session`, EL SISTEMA consultará la sesión en el servicio de cuentas reenviando la cookie `fes_session`.
 - RF-3: CUANDO el servicio de cuentas responde a la consulta de sesión, EL SISTEMA devolverá al cliente el mismo JSON recibido de `GET /accounts/session`.
-- RF-4: CUANDO un cliente solicita `POST /panel/logout` y hay sesión activa, EL SISTEMA solicitará el cierre de esa sesión en el servicio de cuentas.
+- RF-4: CUANDO un cliente solicita `DELETE /panel/session` y hay sesión activa, EL SISTEMA solicitará el cierre de esa sesión en el servicio de cuentas.
 - RF-5: CUANDO el cierre en el servicio de cuentas se completa, EL SISTEMA borrará la cookie `fes_session` en la respuesta al navegador.
 - RF-6: EL SISTEMA no persistirá la cuenta del usuario como dato propio de identidad del panel.
 - RF-7: EL SISTEMA permitirá el acceso al flujo de sesión del panel a cualquier cuenta de Google autenticada mediante la sesión compartida, sin exigir membresía de vendedor ni alta de tienda.
@@ -32,7 +32,7 @@ El panel necesita una puerta de acceso que reutilice la sesión compartida de cu
 - RF-12: SI el servicio de cuentas no está disponible o falla al consultar la sesión, ENTONCES EL SISTEMA responderá 503 con un cuerpo de error distinto del JSON de no autenticado.
 - RF-13: SI el servicio de cuentas no está disponible o falla al cerrar la sesión, ENTONCES EL SISTEMA responderá 503 con un cuerpo de error distinto del JSON de no autenticado y no borrará `fes_session`.
 - RF-14: SI se solicita `GET /panel/session` sin cookie `fes_session` o con sesión inválida, ENTONCES EL SISTEMA responderá 200 y el mismo JSON de cuentas con `authenticated` en false.
-- RF-15: SI se solicita `POST /panel/logout` sin sesión activa, ENTONCES EL SISTEMA responderá 200, borrará `fes_session` y responderá `authenticated` en false.
+- RF-15: SI se solicita `DELETE /panel/session` sin sesión activa, ENTONCES EL SISTEMA responderá 200, borrará `fes_session` y responderá `authenticated` en false.
 
 ## Requisitos no funcionales
 
@@ -43,7 +43,7 @@ El panel necesita una puerta de acceso que reutilice la sesión compartida de cu
 ## Casos límite
 
 - Solicitud de `GET /panel/session` sin cookie `fes_session` o con cookie inválida: 200 y el mismo JSON de cuentas con `authenticated` en false (RF-14).
-- `POST /panel/logout` sin sesión activa: 200, se borra `fes_session` y se responde `authenticated` en false (RF-15).
+- `DELETE /panel/session` sin sesión activa: 200, se borra `fes_session` y se responde `authenticated` en false (RF-15).
 - Fallo del servicio de cuentas durante logout tras haber recibido la petición: 503 y no se borra `fes_session` (RF-13).
 
 ## Fuera de alcance

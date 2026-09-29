@@ -14,9 +14,9 @@ Refleja el código real en `src/` de la rama `001/feat-panel-session-login`
 - Se conservan sin cambio de contrato las rutas de sesión bajo `/panel` y
   `GET /health/live` / `GET /health/ready` (implementados en `identity.api` y `common.health`).
   **(RF-10)**
-- Dependencias hacia dentro: `api → application → domain`; el cliente HTTP de
-  cuentas vive en `infrastructure` e implementa el puerto `AccountSessionGateway`
-  de `application`.
+- Dependencias hacia dentro: `api → use_cases/ports/dtos/navigation → domain`; el
+  cliente HTTP de cuentas vive en `infrastructure` e implementa el puerto
+  `AccountSessionGateway` de `ports`.
 
 ## 2. Ubicación del código (layout real)
 
@@ -31,7 +31,10 @@ src/
 └── identity/
     ├── apps.py
     ├── api/                # vistas DRF, urls, clear_session_cookie
-    ├── application/        # casos de uso, puertos, DTOs
+    ├── use_cases/          # casos de uso de sesión
+    ├── ports/              # protocolos implementados por infraestructura
+    ├── dtos/               # payloads/resultados de frontera
+    ├── navigation/         # construcción de URLs de redirección
     ├── domain/             # errores y constantes (sin Django)
     └── infrastructure/     # AccountSessionClient
 tests/
@@ -80,7 +83,7 @@ Dependencias:
 ### 4.1 `GET /panel/login/google` — **RF-1, RF-8, RF-11**
 
 - Vista: `GoogleLoginRedirectView` (AllowAny).
-- Caso de uso: `build_google_login_redirect(ACCOUNTS_PUBLIC_BASE_URL, PANEL_PUBLIC_ORIGIN)`.
+- Navegación: `build_google_login_redirect_url(ACCOUNTS_PUBLIC_BASE_URL, PANEL_PUBLIC_ORIGIN)`.
 - Responde **302** a
   `{ACCOUNTS_PUBLIC_BASE_URL}/accounts/login/google?return_to=<PANEL_PUBLIC_ORIGIN>`
   (URL-encoded). **No** usa `ACCOUNT_API_BASE_URL` en este camino.
@@ -89,7 +92,7 @@ Dependencias:
 
 ### 4.2 `GET /panel/session` — **RF-2, RF-3, RF-8, RF-12, RF-14**
 
-- Vista: `PanelSessionView`; caso: `resolve_panel_session`.
+- Vista: `PanelSessionViewSet.retrieve`; caso: `resolve_panel_session`.
 - Reenvía `fes_session` a `GET {ACCOUNT_API_BASE_URL}/accounts/session`. **(RF-2, RF-8)**
 - Si account-api responde OK, el panel devuelve **el mismo status y JSON**. **(RF-3)**
 - Sin cookie o sesión inválida: propaga el JSON de cuentas con
@@ -97,9 +100,9 @@ Dependencias:
 - Timeout / red / 5xx / JSON no usable → **503** con cuerpo en español distinto
   del JSON de no autenticado (`error` + `message`). **(RF-12)**
 
-### 4.3 `POST /panel/logout` — **RF-4, RF-5, RF-8, RF-13, RF-15**
+### 4.3 `DELETE /panel/session` — **RF-4, RF-5, RF-8, RF-13, RF-15**
 
-- Vista: `PanelLogoutView`; caso: `logout_panel_session`.
+- Vista: `PanelSessionViewSet.destroy`; caso: `logout_panel_session`.
 - Llama a `POST {ACCOUNT_API_BASE_URL}/accounts/logout` reenviando `fes_session`
   si existe. **(RF-4, RF-8)**
 - Si el gateway no lanza: la vista **proxy** status/body de cuentas y **siempre**
@@ -119,7 +122,7 @@ Dependencias:
 
 - `GET /health/live` → `common.health.views.live`
 - `GET /health/ready` → `common.health.views.ready`
-- Rutas del panel: `panel/login/google`, `panel/session`, `panel/logout`.
+- Rutas del panel: `panel/login/google`, `panel/session`.
 
 ## 5. Capas internas (clean architecture)
 
@@ -130,7 +133,7 @@ Dependencias:
 - Sin imports de Django, DRF, settings ni HTTP.
 - Sin entidad persistida ni reglas de membresía. **(RF-6, RF-7)**
 
-### 5.2 Application — **RF-2, RF-3, RF-4, RF-5, RF-12, RF-13, RF-14, RF-15**
+### 5.2 Use cases, ports, DTOs y navegación — **RF-2, RF-3, RF-4, RF-5, RF-12, RF-13, RF-14, RF-15**
 
 Casos de uso (funciones reales):
 
@@ -139,7 +142,7 @@ Casos de uso (funciones reales):
 2. **`logout_panel_session`** — `gateway.logout(cookie)`; si OK,
    `clear_cookie=True` siempre; si falla el servicio, propaga
    `AccountServiceUnavailable` (la vista no borra cookie). **(RF-4, RF-5, RF-13, RF-15)**
-3. **`build_google_login_redirect`** — combina base URL + path + `return_to`.
+3. **`build_google_login_redirect_url`** — combina base URL + path + `return_to`.
    **(RF-1, RF-8, RF-11)**
 
 Puerto `AccountSessionGateway`:
@@ -157,7 +160,7 @@ Puerto `AccountSessionGateway`:
 
 ### 5.4 API (DRF) — **RF-1, RF-3, RF-5, RF-9, RF-11, RF-12, RF-13, RF-14, RF-15**
 
-- Vistas: `GoogleLoginRedirectView`, `PanelSessionView`, `PanelLogoutView`.
+- Vistas: `GoogleLoginRedirectView`, `PanelSessionViewSet`.
 - `permission_classes = [AllowAny]`; `authentication_classes = []`. **(RF-7)**
 - 503: `{"error": "servicio_no_disponible", "message": "..."}` en español.
   **(RF-12, RF-13)**
@@ -205,9 +208,9 @@ Puerto `AccountSessionGateway`:
 
 Criterios de automatización:
 
-- Unitarios de application/domain con gateway fake.
+- Unitarios de use cases/domain con gateway fake.
 - Unitarios del cliente HTTP / `common.http` con servidor mock.
-- Integración DRF/`APIClient` para los tres endpoints y conservación de health.
+- Integración DRF/`APIClient` para login, sesión y conservación de health.
 - Ejecutar `make verify` al cerrar la implementación.
 
 ## 10. Orden de implementación sugerido
@@ -216,7 +219,7 @@ Criterios de automatización:
    `PANEL_PUBLIC_ORIGIN`) + CORS (**RF-8, RF-9, RF-11**).
 2. `common/{health,http}` y módulo `identity` con capas (**RF-8, RF-10, RF-12, RF-13**).
 3. Casos de uso session/logout/redirect (**RF-1–RF-5, RF-12–RF-15**).
-4. Vistas y rutas `/panel/login/google`, `/panel/session`, `/panel/logout`
+4. Vistas y rutas `/panel/login/google`, `/panel/session`
    (**RF-1–RF-5, RF-7, RF-10**).
 5. Borrado de cookie y matriz de tests (**RF-5, RF-6, RF-10, RF-12–RF-15**).
 6. Dockerfile / registro de app / `make verify`.
@@ -228,7 +231,7 @@ Criterios de automatización:
 | RF-1 | Redirect `GET /panel/login/google` → `ACCOUNTS_PUBLIC_BASE_URL` + `return_to` |
 | RF-2 | Reenvío de `fes_session` a `GET /accounts/session` |
 | RF-3 | Respuesta JSON/status idéntica a la de cuentas |
-| RF-4 | `POST /panel/logout` llama a `POST /accounts/logout` |
+| RF-4 | `DELETE /panel/session` llama a `POST /accounts/logout` |
 | RF-5 | Panel borra `fes_session` tras logout exitoso |
 | RF-6 | Sin modelos/persistencia de cuenta en panel |
 | RF-7 | AllowAny; sin chequeo de membresía/tienda / sin shops |

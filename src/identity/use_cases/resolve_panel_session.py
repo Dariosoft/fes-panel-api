@@ -1,6 +1,6 @@
-from identity.application.dtos import SessionPayload
-from identity.application.ports import AccountSessionGateway
 from identity.domain.errors import AccountServiceUnavailable
+from identity.dtos import SessionPayload
+from identity.ports import AccountSessionGateway
 
 
 def resolve_panel_session(

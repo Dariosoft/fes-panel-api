@@ -1,16 +1,15 @@
 import unittest
 from urllib.parse import parse_qs, urlparse
 
-from identity.application.build_google_login_redirect import build_google_login_redirect
-from identity.application.dtos import LogoutResult, SessionPayload
-from identity.application.logout_panel_session import logout_panel_session
-from identity.application.resolve_panel_session import resolve_panel_session
 from identity.domain import AccountServiceUnavailable
+from identity.dtos import LogoutResult, SessionPayload
+from identity.navigation import build_google_login_redirect_url
+from identity.use_cases import logout_panel_session, resolve_panel_session
 
 
 class BuildGoogleLoginRedirectTests(unittest.TestCase):
     def test_return_to_is_panel_public_origin(self):
-        url = build_google_login_redirect(
+        url = build_google_login_redirect_url(
             "http://account-api.internal:8080/",
             "https://panel.example.com",
         )

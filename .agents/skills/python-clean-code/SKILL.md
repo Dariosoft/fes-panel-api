@@ -21,12 +21,30 @@ Use this skill when adding, moving, or reviewing Python/Django code, especially 
 - Put feature-owned constants inside that app when the value belongs only to that capability.
 - Put configuration values in `config/settings.py` only when they vary by environment or deployment.
 - Put HTTP-specific reusable values near HTTP code when they describe request/response behavior rather than domain rules.
+- Avoid mega-generic folders such as `application/` when they hide unrelated responsibilities.
+- Prefer categorized app-level packages such as `use_cases/`, `ports/`, `dtos/`, `navigation/`, `api/`, `domain/`, and `infrastructure/` when those names describe the files they contain more directly.
+- Put use case functions in `use_cases/`, protocols/interfaces in `ports/`, immutable transfer shapes in `dtos/`, and redirect/navigation URL builders in `navigation/`.
+- Keep one top-level class per file once code is categorized into packages; name the file after the class in snake_case.
+- Put each DTO class in its own file under `dtos/` and each domain error class in its own file under `domain/errors/`.
 
 ## Django Routes
 
 - Keep `path(...)` and `include(...)` route fragments inline in `urls.py` for readability.
 - Do not extract route strings from Django URL declarations only for stylistic consistency.
 - Extract route paths only when the same path is reused outside URL mapping, for example in redirects, tests, documentation generators, or reverse-proxy contracts.
+
+## DRF Views And ViewSets
+
+- Prefer `src/<module>/api/views/` as a package once an app exposes multiple API views or endpoint concepts.
+- Keep one API view or viewset per file after the first simple endpoint, named after the HTTP concept it owns.
+- Prefer a `ViewSet` when multiple routes operate on the same conceptual resource or aggregate, even if routes are mapped manually instead of through a router.
+- Use DRF's conventional resource action names when they fit: `list`, `create`, `retrieve`, `update`, `partial_update`, and `destroy`.
+- Map CRUD semantics to resource actions consistently: collection reads to `list`, single-resource reads to `retrieve`, creation to `create`, full replacement to `update`, partial changes to `partial_update`, and deletion/invalidating the resource to `destroy`.
+- Add non-CRUD custom actions to a `ViewSet` only when they still belong to the same resource lifecycle or aggregate behavior, for example `activate`, `refresh`, `archive`, or `resend_invitation`.
+- Prefer a separate `APIView` or a separate `ViewSet` when a custom action starts a different protocol, crosses into another capability, or only shares the URL prefix but not the resource concept.
+- Prefer `APIView` for standalone redirects, callbacks, webhooks, health checks, and actions that do not share a resource lifecycle.
+- Do not group unrelated endpoints into one `ViewSet` only to reduce file count.
+- Keep public URLs stable when introducing a `ViewSet`; manual `as_view({"method": "action"})` mappings are acceptable when they preserve an existing contract.
 
 ## External API Contracts
 

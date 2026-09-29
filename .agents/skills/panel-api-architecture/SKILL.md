@@ -27,7 +27,10 @@ panel-api/
 │   │   └── health/
 │   └── identity/
 │       ├── api/
-│       ├── application/
+│       ├── use_cases/
+│       ├── ports/
+│       ├── dtos/
+│       ├── navigation/
 │       ├── domain/
 │       └── infrastructure/
 ├── tests/
@@ -50,8 +53,9 @@ Use feature-based Django apps with internal clean architecture boundaries.
 - Organize first by business capability: `identity` today, and a new module when a capability exists.
 - Do not create global technical folders such as `controllers/`, `services/`,
   `repositories/`, `serializers/`, or `models/` at `src/` root.
-- Inside each module, organize by responsibility: `api`, `application`, `domain`,
-  and `infrastructure`.
+- Inside each module, organize by responsibility with direct package names such as
+  `api`, `use_cases`, `ports`, `dtos`, `navigation`, `domain`, and
+  `infrastructure`.
 - Keep Django framework details at the edges. Business rules should not depend on
   DRF requests, responses, serializers, settings, HTTP clients, or ORM querysets.
 
@@ -71,18 +75,23 @@ Put HTTP and DRF boundary code here.
 Typical files:
 
 ```text
-src/identity/api/views.py
+src/identity/api/views/panel_session.py
+src/identity/api/views/google_login_redirect.py
 src/identity/api/serializers.py
 src/identity/api/urls.py
 ```
 
-### `src/<module>/application/`
+### `src/<module>/use_cases/`, `ports/`, `dtos/`, `navigation/`
 
-Put use cases and orchestration here.
+Put framework-independent application behavior in categorized packages instead of
+one generic `application/` bucket.
 
-- Application services, use cases, commands, queries, DTOs, and ports/protocols.
-- Coordinates domain logic and infrastructure interfaces.
-- Defines contracts needed by the use case, implemented by infrastructure.
+- `use_cases/`: orchestration and application actions.
+- `ports/`: protocols/contracts needed by use cases, implemented by infrastructure.
+- `dtos/`: immutable transfer shapes crossing boundaries.
+- `navigation/`: redirect and URL construction that coordinates external flows.
+- Keep one top-level class per file; place DTO classes under `dtos/` and domain
+  error classes under `domain/errors/`.
 - Does not import DRF, Django HTTP objects, concrete HTTP clients, or settings.
 - Avoid direct ORM usage unless the module intentionally uses Django models as the
   persistence boundary for owned data and there is no cleaner adapter yet.
@@ -90,10 +99,12 @@ Put use cases and orchestration here.
 Typical files:
 
 ```text
-src/identity/application/services.py
-src/identity/application/use_cases.py
-src/identity/application/ports.py
-src/identity/application/dtos.py
+src/identity/use_cases/resolve_panel_session.py
+src/identity/use_cases/logout_panel_session.py
+src/identity/ports/account_session_gateway.py
+src/identity/dtos/session_payload.py
+src/identity/dtos/logout_result.py
+src/identity/navigation/google_login_redirect.py
 ```
 
 ### `src/<module>/domain/`
@@ -112,7 +123,7 @@ Typical files:
 ```text
 src/<module>/domain/entities.py
 src/<module>/domain/policies.py
-src/<module>/domain/errors.py
+src/<module>/domain/errors/<error_name>.py
 ```
 
 ### `src/<module>/infrastructure/`
@@ -121,11 +132,11 @@ Put external system adapters here.
 
 - HTTP clients, repository implementations, cache adapters, message clients,
   settings readers, and telemetry adapters.
-- Implements ports defined in `application`.
+- Implements ports defined in `ports/`.
 - May import Django settings, requests/httpx, ORM models, environment-backed
   configuration, and third-party SDKs.
 - Must not contain business rules that belong in `domain` or orchestration that
-  belongs in `application`.
+  belongs in `use_cases`.
 
 Typical files:
 
@@ -192,7 +203,10 @@ with this shape:
 ```text
 src/<module>/
 ├── api/
-├── application/
+├── use_cases/
+├── ports/
+├── dtos/
+├── navigation/
 ├── domain/
 ├── infrastructure/
 ├── models.py
@@ -213,23 +227,24 @@ app has a clear ownership boundary.
 Allowed dependency direction:
 
 ```text
-api -> application -> domain
-infrastructure -> application/domain
+api -> use_cases/ports/dtos/navigation -> domain
+infrastructure -> ports/dtos/domain
 models -> domain only when model methods delegate to domain concepts
 config -> api/common wiring only
 ```
 
 Forbidden dependencies:
 
-- `domain` importing `api`, `application`, `infrastructure`, Django, DRF, or ORM.
-- `application` importing `api`, concrete infrastructure clients, DRF, or Django
-  HTTP request/response classes.
+- `domain` importing `api`, `use_cases`, `ports`, `dtos`, `navigation`,
+  `infrastructure`, Django, DRF, or ORM.
+- `use_cases`, `ports`, `dtos`, or `navigation` importing `api`, concrete
+  infrastructure clients, DRF, or Django HTTP request/response classes.
 - `api` containing business rules or outbound service clients.
 - `infrastructure` calling DRF views or serializers.
-- Cross-module imports that bypass an application-level interface.
+- Cross-module imports that bypass an explicit port or facade.
 
-When two modules need to collaborate, prefer an application port or explicit
-facade instead of importing another module's internals.
+When two modules need to collaborate, prefer a port or explicit facade instead
+of importing another module's internals.
 
 ## Placement Checklist
 
@@ -237,12 +252,15 @@ Before creating a file, answer these questions:
 
 1. Which business capability owns this behavior?
 2. Is this HTTP/API code? Put it in `src/<module>/api/`.
-3. Is this a use case or orchestration? Put it in `src/<module>/application/`.
-4. Is this a business rule independent of Django? Put it in `src/<module>/domain/`.
-5. Is this an external dependency adapter? Put it in `src/<module>/infrastructure/`.
-6. Is this a Django model for owned data? Put it in `src/<module>/models.py`.
-7. Is this health or truly shared code? Put it under `src/common/`.
-8. Is this a test? Put it under `tests/`, not inside `src/`.
+3. Is this a use case or orchestration? Put it in `src/<module>/use_cases/`.
+4. Is this a protocol/interface? Put it in `src/<module>/ports/`.
+5. Is this a boundary DTO? Put it in `src/<module>/dtos/`.
+6. Is this redirect/navigation URL construction? Put it in `src/<module>/navigation/`.
+7. Is this a business rule independent of Django? Put it in `src/<module>/domain/`.
+8. Is this an external dependency adapter? Put it in `src/<module>/infrastructure/`.
+9. Is this a Django model for owned data? Put it in `src/<module>/models.py`.
+10. Is this health or truly shared code? Put it under `src/common/`.
+11. Is this a test? Put it under `tests/`, not inside `src/`.
 
 If none of these answers is clear, stop and clarify the ownership boundary before
 writing code.

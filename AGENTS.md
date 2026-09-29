@@ -20,8 +20,8 @@ Persiste en la base `panel`, expone rutas bajo `/panel` y health checks, y se ej
 - Mantén las vistas pequeñas y mueve reglas reutilizables a servicios del dominio correspondiente.
 
 ## Reglas
-- Usa `/python-clean-code` al implementar o revisar código Python/Django, especialmente para decidir límites de constantes, contratos externos, configuración y rutas del framework.
-- Lee la skill `/panel-api-architecture`, `/django-patterns` y la spec activa, si existe, antes de tocar código.
+- Lee `/python-clean-code`, `/panel-api-architecture`, `/django-patterns` y la spec activa, si existe, antes de tocar código Python/Django.
+- Aplica `/python-clean-code` al decidir límites de constantes, contratos externos, configuración, rutas del framework, organización de views y uso de `APIView` vs `ViewSet`.
 - Usa `/clean-architecture` al diseñar o modificar capas, límites, dependencias, casos de uso o adaptadores.
 - Solo posee datos de tiendas, vendedores y membresías; no repliques productos, pedidos ni pagos como fuente de verdad.
 - Consume las APIs de dominio en lugar de acceder a sus bases o tablas.

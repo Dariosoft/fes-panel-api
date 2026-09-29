@@ -1,8 +1,8 @@
 from common.contracts.account_api import ACCOUNT_LOGOUT_PATH, ACCOUNT_SESSION_PATH
 from common.http import JsonRequest, RemoteServiceError, request_json
-from identity.application.dtos import LogoutResult, SessionPayload
 from identity.domain.constants import SESSION_COOKIE_NAME
 from identity.domain.errors import AccountServiceUnavailable
+from identity.dtos import LogoutResult, SessionPayload
 
 
 class AccountSessionClient:

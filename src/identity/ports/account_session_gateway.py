@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from identity.application.dtos import LogoutResult, SessionPayload
+from identity.dtos import LogoutResult, SessionPayload
 
 
 class AccountSessionGateway(Protocol):

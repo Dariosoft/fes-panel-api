@@ -21,7 +21,10 @@ src/
 │   └── http.py             # request_json / RemoteServiceError
 └── identity/
     ├── api/                # vistas DRF, urls, clear_session_cookie
-    ├── application/        # casos de uso, puerto, DTOs
+    ├── use_cases/          # resolve/logout session
+    ├── ports/              # AccountSessionGateway
+    ├── dtos/               # SessionPayload / LogoutResult
+    ├── navigation/         # Google login redirect URL
     ├── domain/             # constantes y errores
     └── infrastructure/     # AccountSessionClient
 ```
@@ -57,9 +60,9 @@ flowchart TB
     subgraph identityApp [identity]
       ApiViews[api.views]
       Cookies[api.cookies.clear_session_cookie]
-      BuildRedirect[application.build_google_login_redirect]
-      ResolveSession[application.resolve_panel_session]
-      LogoutSession[application.logout_panel_session]
+      BuildRedirect[navigation.google_login_redirect]
+      ResolveSession[use_cases.resolve_panel_session]
+      LogoutSession[use_cases.logout_panel_session]
       Gateway[[AccountSessionGateway Protocol]]
       Client[infrastructure.AccountSessionClient]
       Domain[domain: SESSION_COOKIE_NAME / AccountServiceUnavailable]
@@ -74,7 +77,7 @@ flowchart TB
 
   UI -->|GET /panel/login/google| ApiViews
   UI -->|GET /panel/session| ApiViews
-  UI -->|POST /panel/logout| ApiViews
+  UI -->|DELETE /panel/session| ApiViews
   UI -->|health| HealthLive
   UI --> HealthReady
 
@@ -111,11 +114,9 @@ classDiagram
   class GoogleLoginRedirectView {
     +get(request) HttpResponseRedirect
   }
-  class PanelSessionView {
-    +get(request) Response
-  }
-  class PanelLogoutView {
-    +post(request) Response
+  class PanelSessionViewSet {
+    +retrieve(request) Response
+    +destroy(request) Response
   }
 
   class clear_session_cookie {
@@ -123,9 +124,9 @@ classDiagram
     +clear_session_cookie(response)
   }
 
-  class build_google_login_redirect {
+  class build_google_login_redirect_url {
     <<function>>
-    +build_google_login_redirect(base_url, panel_public_origin) str
+    +build_google_login_redirect_url(base_url, panel_public_origin) str
   }
   class resolve_panel_session {
     <<function>>
@@ -170,12 +171,11 @@ classDiagram
     fes_session
   }
 
-  GoogleLoginRedirectView --> build_google_login_redirect
-  PanelSessionView --> resolve_panel_session
-  PanelLogoutView --> logout_panel_session
-  PanelLogoutView --> clear_session_cookie
-  PanelSessionView --> AccountSessionClient : _gateway()
-  PanelLogoutView --> AccountSessionClient : _gateway()
+  GoogleLoginRedirectView --> build_google_login_redirect_url
+  PanelSessionViewSet --> resolve_panel_session
+  PanelSessionViewSet --> logout_panel_session
+  PanelSessionViewSet --> clear_session_cookie
+  PanelSessionViewSet --> AccountSessionClient : _gateway()
 
   resolve_panel_session --> AccountSessionGateway
   logout_panel_session --> AccountSessionGateway
@@ -194,13 +194,13 @@ servidor→servidor en este paso.
 sequenceDiagram
   actor Browser as Navegador
   participant View as GoogleLoginRedirectView
-  participant UC as build_google_login_redirect
+  participant UC as build_google_login_redirect_url
   participant Settings as settings
   participant Accounts as account-api (público)
 
   Browser->>View: GET /panel/login/google
   View->>Settings: ACCOUNTS_PUBLIC_BASE_URL<br/>PANEL_PUBLIC_ORIGIN
-  View->>UC: build_google_login_redirect(public_base, origin)
+  View->>UC: build_google_login_redirect_url(public_base, origin)
   UC-->>View: {public_base}/accounts/login/google?return_to={origin}
   View-->>Browser: 302 Location = URL pública
   Browser->>Accounts: GET /accounts/login/google?return_to=...
@@ -212,7 +212,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   actor Browser as Navegador
-  participant View as PanelSessionView
+  participant View as PanelSessionViewSet
   participant UC as resolve_panel_session
   participant Client as AccountSessionClient
   participant Http as common.http.request_json
@@ -255,13 +255,13 @@ account-api puede devolver 204 vacío.
 ```mermaid
 sequenceDiagram
   actor Browser as Navegador
-  participant View as PanelLogoutView
+  participant View as PanelSessionViewSet
   participant UC as logout_panel_session
   participant Client as AccountSessionClient
   participant Cookie as clear_session_cookie
   participant Accounts as account-api (interno)
 
-  Browser->>View: POST /panel/logout<br/>(Cookie opcional)
+  Browser->>View: DELETE /panel/session<br/>(Cookie opcional)
   View->>UC: logout_panel_session(gateway, cookie)
   UC->>Client: logout(cookie)
   Client->>Accounts: POST /accounts/logout + Cookie

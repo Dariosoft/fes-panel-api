@@ -12,7 +12,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.test import APIClient
 
 from common.health.views import live, ready
-from identity.api.views import GoogleLoginRedirectView, PanelLogoutView, PanelSessionView
+from identity.api.views import GoogleLoginRedirectView, PanelSessionViewSet
 from identity.domain import SESSION_COOKIE_NAME
 from identity.infrastructure.account_session_client import AccountSessionClient
 
@@ -157,7 +157,7 @@ class LogoutIntegrationTests(LiveAccountsServerMixin, SimpleTestCase):
     def test_logout_ok_calls_accounts_and_clears_cookie(self):
         with override_settings(ACCOUNT_API_BASE_URL=self.accounts_base):
             self.client.cookies[SESSION_COOKIE_NAME] = "sess"
-            response = self.client.post("/panel/logout")
+            response = self.client.delete("/panel/session")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(_AccountsHandler.last_path, "/accounts/logout")
         self.assertEqual(_AccountsHandler.last_cookie, f"{SESSION_COOKIE_NAME}=sess")
@@ -165,7 +165,7 @@ class LogoutIntegrationTests(LiveAccountsServerMixin, SimpleTestCase):
 
     def test_logout_without_session_is_idempotent(self):
         with override_settings(ACCOUNT_API_BASE_URL=self.accounts_base):
-            response = self.client.post("/panel/logout")
+            response = self.client.delete("/panel/session")
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()["authenticated"])
         self.assertEqual(response.cookies[SESSION_COOKIE_NAME]["max-age"], 0)
@@ -177,7 +177,7 @@ class LogoutIntegrationTests(LiveAccountsServerMixin, SimpleTestCase):
             ACCOUNT_API_TIMEOUT_SECONDS=0.5,
         ):
             self.client.cookies[SESSION_COOKIE_NAME] = "sess"
-            response = self.client.post("/panel/logout")
+            response = self.client.delete("/panel/session")
         self.assertEqual(response.status_code, 503)
         self.assertNotIn(SESSION_COOKIE_NAME, response.cookies)
 
@@ -193,7 +193,7 @@ class RfCoverageSmokeTests(SimpleTestCase):
         self.assertFalse(migrations_dir.exists())
 
     def test_endpoints_are_allow_any(self):
-        for view in (GoogleLoginRedirectView, PanelSessionView, PanelLogoutView):
+        for view in (GoogleLoginRedirectView, PanelSessionViewSet):
             self.assertIn(AllowAny, view.permission_classes)
 
     def test_session_and_logout_do_not_import_shops(self):

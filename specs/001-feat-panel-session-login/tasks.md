@@ -25,7 +25,7 @@ código real en `src/` (identity + common; sin shops).
 
 - [x] **T4. Crear app `identity` con capas vacías y registro bajo `src/`**
   - Cubre: RF-6, RF-10
-  - Crear `src/identity/` con `apps.py` y paquetes `api/`, `application/`, `domain/`, `infrastructure/`; registrar en `INSTALLED_APPS`; health en `src/common/`; Dockerfile copia `src/` y `tests/`. No añadir modelos ni migraciones de cuenta. Sin módulo `shops`.
+  - Crear `src/identity/` con `apps.py` y paquetes `api/`, `use_cases/`, `ports/`, `dtos/`, `navigation/`, `domain/`, `infrastructure/`; registrar en `INSTALLED_APPS`; health en `src/common/`; Dockerfile copia `src/` y `tests/`. No añadir modelos ni migraciones de cuenta. Sin módulo `shops`.
   - Done when: la app carga al arrancar, no hay modelo/migración de identidad, y `/health/live` y `/health/ready` responden desde `common`.
 
 - [x] **T5. Domain: constantes y error de indisponibilidad**
@@ -40,7 +40,7 @@ código real en `src/` (identity + common; sin shops).
   - Protocolo en application: `get_session(fes_session)` y `logout(fes_session)` con DTOs de payload/resultado; la capa no importa DRF ni el cliente HTTP concreto.
   - Done when: el Protocol y los tipos existen y un fake en tests puede implementar el puerto.
 
-- [x] **T7. Caso de uso `build_google_login_redirect`**
+- [x] **T7. Navegación `build_google_login_redirect_url`**
   - Cubre: RF-1, RF-8, RF-11
   - Función pura que combina la base pública (`ACCOUNTS_PUBLIC_BASE_URL`) + `/accounts/login/google` + `return_to` = `PANEL_PUBLIC_ORIGIN` (URL-encoded).
   - Done when: un test unitario verifica la URL resultante con `return_to` igual al origen público (no el host interno de la API).
@@ -66,23 +66,23 @@ código real en `src/` (identity + common; sin shops).
 
 - [x] **T11. Vista `GoogleLoginRedirectView` (`GET /panel/login/google`)**
   - Cubre: RF-1, RF-7, RF-11
-  - Vista delgada AllowAny: invoca `build_google_login_redirect` con `ACCOUNTS_PUBLIC_BASE_URL` y responde 302; sin llamar a account-api servidor→servidor ni validar membresía/tienda.
+  - Vista delgada AllowAny: invoca `build_google_login_redirect_url` con `ACCOUNTS_PUBLIC_BASE_URL` y responde 302; sin llamar a account-api servidor→servidor ni validar membresía/tienda.
   - Done when: `GET /panel/login/google` redirige a `/accounts/login/google` sobre la base **pública** con `return_to` = origen público configurado.
 
-- [x] **T12. Vista `PanelSessionView` (`GET /panel/session`)**
+- [x] **T12. Acción `PanelSessionViewSet.retrieve` (`GET /panel/session`)**
   - Cubre: RF-2, RF-3, RF-7, RF-12, RF-14
   - AllowAny: lee `fes_session`, invoca `resolve_panel_session`, devuelve el mismo JSON/status de cuentas; 503 con cuerpo en español distinto del JSON de no autenticado si el servicio falla.
   - Done when: integración con gateway/cliente mock: mismo JSON en éxito; 200 + `authenticated: false` sin sesión válida; 503 con shape de error distinto ante caída.
 
-- [x] **T13. Vista `PanelLogoutView` (`POST /panel/logout`) y borrado de cookie**
+- [x] **T13. Acción `PanelSessionViewSet.destroy` (`DELETE /panel/session`) y borrado de cookie**
   - Cubre: RF-4, RF-5, RF-7, RF-13, RF-15
   - AllowAny: invoca `logout_panel_session`; si el caso lo autoriza, `clear_session_cookie` (Path `/`, HttpOnly, SameSite=Lax, Domain; Secure vía `getattr(SESSION_COOKIE_SECURE, False)`); en 503 no borrar cookie; mensaje 503 en español. El panel proxy status/body de cuentas (p. ej. 204 vacío → `{}`); los tests pueden asumir 200 + `authenticated: false`.
   - Done when: logout OK borra cookie en la respuesta del panel; sin sesión → OK + borra; fallo de cuentas → 503 y cookie intacta.
 
 - [x] **T14. Cablear URLs de panel y health**
   - Cubre: RF-10
-  - En `src/config/urls.py`: health desde `common`; `include("identity.api.urls")` bajo `panel/` para login/session/logout.
-  - Done when: las tres rutas de sesión resuelven y los health checks siguen respondiendo desde `common`.
+  - En `src/config/urls.py`: health desde `common`; `include("identity.api.urls")` bajo `panel/` para login/session.
+  - Done when: las rutas de sesión resuelven y los health checks siguen respondiendo desde `common`.
 
 ## Pruebas de cierre y verificación
 
