@@ -23,9 +23,9 @@ src/
     ├── api/                # vistas DRF, urls, clear_session_cookie
     ├── use_cases/          # resolve/logout session
     ├── ports/              # AccountSessionGateway
-    ├── dtos/               # SessionPayload / LogoutResult
+    ├── dtos/               # un archivo por DTO
     ├── navigation/         # Google login redirect URL
-    ├── domain/             # constantes y errores
+    ├── domain/             # constantes y domain/errors/
     └── infrastructure/     # AccountSessionClient
 ```
 

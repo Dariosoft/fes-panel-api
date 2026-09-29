@@ -33,11 +33,11 @@ código real en `src/` (identity + common; sin shops).
   - En `identity/domain` (sin Django/DRF/HTTP): `SESSION_COOKIE_NAME = "fes_session"`, error tipado `AccountServiceUnavailable`, sin entidad persistida ni reglas de membresía.
   - Done when: tests unitarios importan estas piezas sin Django y confirman que no hay dependencia hacia ORM ni hacia un módulo shops.
 
-## Application: puerto y casos de uso
+## Use cases, ports, DTOs y navegación
 
 - [x] **T6. Definir puerto `AccountSessionGateway` y DTOs**
   - Cubre: RF-2, RF-3, RF-4
-  - Protocolo en application: `get_session(fes_session)` y `logout(fes_session)` con DTOs de payload/resultado; la capa no importa DRF ni el cliente HTTP concreto.
+  - Protocolo en `identity/ports`: `get_session(fes_session)` y `logout(fes_session)` con DTOs de payload/resultado en archivos separados bajo `identity/dtos`; la capa no importa DRF ni el cliente HTTP concreto.
   - Done when: el Protocol y los tipos existen y un fake en tests puede implementar el puerto.
 
 - [x] **T7. Navegación `build_google_login_redirect_url`**

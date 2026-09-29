@@ -33,9 +33,9 @@ src/
     ├── api/                # vistas DRF, urls, clear_session_cookie
     ├── use_cases/          # casos de uso de sesión
     ├── ports/              # protocolos implementados por infraestructura
-    ├── dtos/               # payloads/resultados de frontera
+    ├── dtos/               # un archivo por payload/resultado de frontera
     ├── navigation/         # construcción de URLs de redirección
-    ├── domain/             # errores y constantes (sin Django)
+    ├── domain/             # constantes y errores tipados (sin Django)
     └── infrastructure/     # AccountSessionClient
 tests/
 ├── identity/               # unitarios por capa
@@ -130,6 +130,7 @@ Dependencias:
 
 - `AccountServiceUnavailable` (mapea a 503).
 - `SESSION_COOKIE_NAME = "fes_session"`.
+- El error vive en `domain/errors/account_service_unavailable.py`.
 - Sin imports de Django, DRF, settings ni HTTP.
 - Sin entidad persistida ni reglas de membresía. **(RF-6, RF-7)**
 
@@ -149,6 +150,10 @@ Puerto `AccountSessionGateway`:
 
 - `get_session(fes_session: str | None) -> SessionPayload`
 - `logout(fes_session: str | None) -> LogoutResult`
+
+DTOs:
+
+- `SessionPayload`, `LogoutResult` y `LogoutPanelSessionResult` viven en archivos separados bajo `identity/dtos/`.
 
 ### 5.3 Infrastructure — **RF-8, RF-12, RF-13**
 
