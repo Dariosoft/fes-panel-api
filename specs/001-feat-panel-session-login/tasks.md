@@ -64,24 +64,24 @@ código real en `src/` (identity + common; sin shops).
 
 ## API DRF y rutas
 
-- [x] **T11. Vista `GoogleLoginRedirectView` (`GET /panel/login/google`)**
+- [x] **T11. Vista `GoogleLoginRedirectView` (`GET /panel/identity/login/google`)**
   - Cubre: RF-1, RF-7, RF-11
   - Vista delgada AllowAny: invoca `build_google_login_redirect_url` con `ACCOUNTS_PUBLIC_BASE_URL` y responde 302; sin llamar a account-api servidor→servidor ni validar membresía/tienda.
-  - Done when: `GET /panel/login/google` redirige a `/accounts/login/google` sobre la base **pública** con `return_to` = origen público configurado.
+  - Done when: `GET /panel/identity/login/google` redirige a `/accounts/login/google` sobre la base **pública** con `return_to` = origen público configurado.
 
-- [x] **T12. Acción `PanelSessionViewSet.retrieve` (`GET /panel/session`)**
+- [x] **T12. Acción `PanelSessionViewSet.retrieve` (`GET /panel/identity/session`)**
   - Cubre: RF-2, RF-3, RF-7, RF-12, RF-14
   - AllowAny: lee `fes_session`, invoca `resolve_panel_session`, devuelve el mismo JSON/status de cuentas; 503 con cuerpo en español distinto del JSON de no autenticado si el servicio falla.
   - Done when: integración con gateway/cliente mock: mismo JSON en éxito; 200 + `authenticated: false` sin sesión válida; 503 con shape de error distinto ante caída.
 
-- [x] **T13. Acción `PanelSessionViewSet.destroy` (`DELETE /panel/session`) y borrado de cookie**
+- [x] **T13. Acción `PanelSessionViewSet.destroy` (`DELETE /panel/identity/session`) y borrado de cookie**
   - Cubre: RF-4, RF-5, RF-7, RF-13, RF-15
   - AllowAny: invoca `logout_panel_session`; si el caso lo autoriza, `clear_session_cookie` (Path `/`, HttpOnly, SameSite=Lax, Domain; Secure vía `getattr(SESSION_COOKIE_SECURE, False)`); en 503 no borrar cookie; mensaje 503 en español. El panel proxy status/body de cuentas (p. ej. 204 vacío → `{}`); los tests pueden asumir 200 + `authenticated: false`.
   - Done when: logout OK borra cookie en la respuesta del panel; sin sesión → OK + borra; fallo de cuentas → 503 y cookie intacta.
 
 - [x] **T14. Cablear URLs de panel y health**
   - Cubre: RF-10
-  - En `src/config/urls.py`: health desde `common`; `include("identity.api.urls")` bajo `panel/` para login/session.
+  - En `src/config/urls.py`: health desde `common`; `include("identity.api.urls")` bajo `panel/identity/` para login/session.
   - Done when: las rutas de sesión resuelven y los health checks siguen respondiendo desde `common`.
 
 ## Pruebas de cierre y verificación

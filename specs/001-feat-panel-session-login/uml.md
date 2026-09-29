@@ -75,9 +75,9 @@ flowchart TB
     LogoutEndpoint["POST /accounts/logout"]
   end
 
-  UI -->|GET /panel/login/google| ApiViews
-  UI -->|GET /panel/session| ApiViews
-  UI -->|DELETE /panel/session| ApiViews
+  UI -->|GET /panel/identity/login/google| ApiViews
+  UI -->|GET /panel/identity/session| ApiViews
+  UI -->|DELETE /panel/identity/session| ApiViews
   UI -->|health| HealthLive
   UI --> HealthReady
 
@@ -198,7 +198,7 @@ sequenceDiagram
   participant Settings as settings
   participant Accounts as account-api (público)
 
-  Browser->>View: GET /panel/login/google
+  Browser->>View: GET /panel/identity/login/google
   View->>Settings: ACCOUNTS_PUBLIC_BASE_URL<br/>PANEL_PUBLIC_ORIGIN
   View->>UC: build_google_login_redirect_url(public_base, origin)
   UC-->>View: {public_base}/accounts/login/google?return_to={origin}
@@ -218,7 +218,7 @@ sequenceDiagram
   participant Http as common.http.request_json
   participant Accounts as account-api (interno)
 
-  Browser->>View: GET /panel/session<br/>(Cookie: fes_session=...)
+  Browser->>View: GET /panel/identity/session<br/>(Cookie: fes_session=...)
   View->>UC: resolve_panel_session(gateway, cookie)
   UC->>Client: get_session(cookie)
   Client->>Http: GET /accounts/session + Cookie
@@ -261,7 +261,7 @@ sequenceDiagram
   participant Cookie as clear_session_cookie
   participant Accounts as account-api (interno)
 
-  Browser->>View: DELETE /panel/session<br/>(Cookie opcional)
+  Browser->>View: DELETE /panel/identity/session<br/>(Cookie opcional)
   View->>UC: logout_panel_session(gateway, cookie)
   UC->>Client: logout(cookie)
   Client->>Accounts: POST /accounts/logout + Cookie

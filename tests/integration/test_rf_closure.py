@@ -86,7 +86,7 @@ class RedirectAndBaseUrlTests(LiveAccountsServerMixin, SimpleTestCase):
             ACCOUNT_API_BASE_URL=self.accounts_base,
             ACCOUNTS_PUBLIC_BASE_URL=self.accounts_base,
         ):
-            response = self.client.get("/panel/login/google")
+            response = self.client.get("/panel/identity/login/google")
         self.assertIn(response.status_code, (302, 303))
         parsed = urlparse(response["Location"])
         self.assertEqual(parsed.netloc, f"127.0.0.1:{self._port}")
@@ -120,7 +120,7 @@ class SessionIntegrationTests(LiveAccountsServerMixin, SimpleTestCase):
         _AccountsHandler.session_body = body
         with override_settings(ACCOUNT_API_BASE_URL=self.accounts_base):
             self.client.cookies[SESSION_COOKIE_NAME] = "sess"
-            response = self.client.get("/panel/session")
+            response = self.client.get("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), body)
         self.assertEqual(_AccountsHandler.last_cookie, f"{SESSION_COOKIE_NAME}=sess")
@@ -129,7 +129,7 @@ class SessionIntegrationTests(LiveAccountsServerMixin, SimpleTestCase):
         _AccountsHandler.session_body = {"authenticated": False}
         with override_settings(ACCOUNT_API_BASE_URL=self.accounts_base):
             self.client.cookies[SESSION_COOKIE_NAME] = "bad"
-            response = self.client.get("/panel/session")
+            response = self.client.get("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"authenticated": False})
 
@@ -139,7 +139,7 @@ class SessionIntegrationTests(LiveAccountsServerMixin, SimpleTestCase):
             ACCOUNT_API_BASE_URL=self.accounts_base,
             ACCOUNT_API_TIMEOUT_SECONDS=0.5,
         ):
-            response = self.client.get("/panel/session")
+            response = self.client.get("/panel/identity/session")
         self.assertEqual(response.status_code, 503)
         self.assertNotEqual(response.json(), {"authenticated": False})
         self.assertIn("message", response.json())
@@ -157,7 +157,7 @@ class LogoutIntegrationTests(LiveAccountsServerMixin, SimpleTestCase):
     def test_logout_ok_calls_accounts_and_clears_cookie(self):
         with override_settings(ACCOUNT_API_BASE_URL=self.accounts_base):
             self.client.cookies[SESSION_COOKIE_NAME] = "sess"
-            response = self.client.delete("/panel/session")
+            response = self.client.delete("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(_AccountsHandler.last_path, "/accounts/logout")
         self.assertEqual(_AccountsHandler.last_cookie, f"{SESSION_COOKIE_NAME}=sess")
@@ -165,7 +165,7 @@ class LogoutIntegrationTests(LiveAccountsServerMixin, SimpleTestCase):
 
     def test_logout_without_session_is_idempotent(self):
         with override_settings(ACCOUNT_API_BASE_URL=self.accounts_base):
-            response = self.client.delete("/panel/session")
+            response = self.client.delete("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()["authenticated"])
         self.assertEqual(response.cookies[SESSION_COOKIE_NAME]["max-age"], 0)
@@ -177,7 +177,7 @@ class LogoutIntegrationTests(LiveAccountsServerMixin, SimpleTestCase):
             ACCOUNT_API_TIMEOUT_SECONDS=0.5,
         ):
             self.client.cookies[SESSION_COOKIE_NAME] = "sess"
-            response = self.client.delete("/panel/session")
+            response = self.client.delete("/panel/identity/session")
         self.assertEqual(response.status_code, 503)
         self.assertNotIn(SESSION_COOKIE_NAME, response.cookies)
 
@@ -209,7 +209,7 @@ class RfCoverageSmokeTests(SimpleTestCase):
     )
     def test_cors_preflight_allows_panel_origin_with_credentials(self):
         response = self.client.options(
-            "/panel/session",
+            "/panel/identity/session",
             HTTP_ORIGIN="https://panel.example.com",
             HTTP_ACCESS_CONTROL_REQUEST_METHOD="GET",
         )

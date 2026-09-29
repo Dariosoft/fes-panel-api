@@ -44,7 +44,7 @@ tests/
 ```
 
 - `identity` está en `INSTALLED_APPS`.
-- `config/urls.py` monta `path("panel/", include("identity.api.urls"))` y las rutas de health.
+- `config/urls.py` monta `path("panel/identity/", include("identity.api.urls"))` y las rutas de health.
 - El `Dockerfile` copia `src/` y `tests/`; no existe app `shops`.
 - Health vive en `common/`; las rutas del panel viven en `identity.api`, no en `shops.views`. **(RF-10)**
 
@@ -80,7 +80,7 @@ Dependencias:
 
 ## 4. Contratos HTTP del panel
 
-### 4.1 `GET /panel/login/google` — **RF-1, RF-8, RF-11**
+### 4.1 `GET /panel/identity/login/google` — **RF-1, RF-8, RF-11**
 
 - Vista: `GoogleLoginRedirectView` (AllowAny).
 - Navegación: `build_google_login_redirect_url(ACCOUNTS_PUBLIC_BASE_URL, PANEL_PUBLIC_ORIGIN)`.
@@ -90,7 +90,7 @@ Dependencias:
 - `return_to` = origen público del panel (no el host de la API). **(RF-1, RF-11)**
 - No validar membresía ni tienda. **(RF-7)**
 
-### 4.2 `GET /panel/session` — **RF-2, RF-3, RF-8, RF-12, RF-14**
+### 4.2 `GET /panel/identity/session` — **RF-2, RF-3, RF-8, RF-12, RF-14**
 
 - Vista: `PanelSessionViewSet.retrieve`; caso: `resolve_panel_session`.
 - Reenvía `fes_session` a `GET {ACCOUNT_API_BASE_URL}/accounts/session`. **(RF-2, RF-8)**
@@ -100,7 +100,7 @@ Dependencias:
 - Timeout / red / 5xx / JSON no usable → **503** con cuerpo en español distinto
   del JSON de no autenticado (`error` + `message`). **(RF-12)**
 
-### 4.3 `DELETE /panel/session` — **RF-4, RF-5, RF-8, RF-13, RF-15**
+### 4.3 `DELETE /panel/identity/session` — **RF-4, RF-5, RF-8, RF-13, RF-15**
 
 - Vista: `PanelSessionViewSet.destroy`; caso: `logout_panel_session`.
 - Llama a `POST {ACCOUNT_API_BASE_URL}/accounts/logout` reenviando `fes_session`
@@ -122,7 +122,7 @@ Dependencias:
 
 - `GET /health/live` → `common.health.views.live`
 - `GET /health/ready` → `common.health.views.ready`
-- Rutas del panel: `panel/login/google`, `panel/session`.
+- Rutas del panel: `panel/identity/login/google`, `panel/identity/session`.
 
 ## 5. Capas internas (clean architecture)
 
@@ -224,7 +224,7 @@ Criterios de automatización:
    `PANEL_PUBLIC_ORIGIN`) + CORS (**RF-8, RF-9, RF-11**).
 2. `common/{health,http}` y módulo `identity` con capas (**RF-8, RF-10, RF-12, RF-13**).
 3. Casos de uso session/logout/redirect (**RF-1–RF-5, RF-12–RF-15**).
-4. Vistas y rutas `/panel/login/google`, `/panel/session`
+4. Vistas y rutas `/panel/identity/login/google`, `/panel/identity/session`
    (**RF-1–RF-5, RF-7, RF-10**).
 5. Borrado de cookie y matriz de tests (**RF-5, RF-6, RF-10, RF-12–RF-15**).
 6. Dockerfile / registro de app / `make verify`.
@@ -233,10 +233,10 @@ Criterios de automatización:
 
 | RF | Entregable principal |
 |---|---|
-| RF-1 | Redirect `GET /panel/login/google` → `ACCOUNTS_PUBLIC_BASE_URL` + `return_to` |
+| RF-1 | Redirect `GET /panel/identity/login/google` → `ACCOUNTS_PUBLIC_BASE_URL` + `return_to` |
 | RF-2 | Reenvío de `fes_session` a `GET /accounts/session` |
 | RF-3 | Respuesta JSON/status idéntica a la de cuentas |
-| RF-4 | `DELETE /panel/session` llama a `POST /accounts/logout` |
+| RF-4 | `DELETE /panel/identity/session` llama a `POST /accounts/logout` |
 | RF-5 | Panel borra `fes_session` tras logout exitoso |
 | RF-6 | Sin modelos/persistencia de cuenta en panel |
 | RF-7 | AllowAny; sin chequeo de membresía/tienda / sin shops |

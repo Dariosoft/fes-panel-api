@@ -47,7 +47,7 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         self.client = APIClient()
 
     def test_google_login_redirects_with_return_to(self):
-        response = self.client.get("/panel/login/google")
+        response = self.client.get("/panel/identity/login/google")
         self.assertIn(response.status_code, (302, 303))
         location = response["Location"]
         parsed = urlparse(location)
@@ -61,7 +61,7 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         PANEL_PUBLIC_ORIGIN="https://panel.example.com",
     )
     def test_google_login_redirects_the_browser_to_the_public_api(self):
-        response = self.client.get("/panel/login/google")
+        response = self.client.get("/panel/identity/login/google")
         parsed = urlparse(response["Location"])
         self.assertEqual(parsed.scheme, "https")
         self.assertEqual(parsed.netloc, "api.example.com")
@@ -75,7 +75,7 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         gateway = _FakeGateway(session_payload=payload)
         with patch("identity.api.views.panel_session._gateway", return_value=gateway):
             self.client.cookies[SESSION_COOKIE_NAME] = "tok"
-            response = self.client.get("/panel/session")
+            response = self.client.get("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), payload.body)
         self.assertEqual(gateway.last_session_cookie, "tok")
@@ -84,14 +84,14 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         payload = SessionPayload(status_code=200, body={"authenticated": False})
         gateway = _FakeGateway(session_payload=payload)
         with patch("identity.api.views.panel_session._gateway", return_value=gateway):
-            response = self.client.get("/panel/session")
+            response = self.client.get("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"authenticated": False})
 
     def test_session_unavailable_is_503_distinct_shape(self):
         gateway = _FakeGateway(session_error=AccountServiceUnavailable())
         with patch("identity.api.views.panel_session._gateway", return_value=gateway):
-            response = self.client.get("/panel/session")
+            response = self.client.get("/panel/identity/session")
         self.assertEqual(response.status_code, 503)
         body = response.json()
         self.assertNotEqual(body, {"authenticated": False})
@@ -106,7 +106,7 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         gateway = _FakeGateway(logout_result=result)
         with patch("identity.api.views.panel_session._gateway", return_value=gateway):
             self.client.cookies[SESSION_COOKIE_NAME] = "tok"
-            response = self.client.delete("/panel/session")
+            response = self.client.delete("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"authenticated": False})
         self.assertEqual(gateway.last_logout_cookie, "tok")
@@ -121,7 +121,7 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         )
         gateway = _FakeGateway(logout_result=result)
         with patch("identity.api.views.panel_session._gateway", return_value=gateway):
-            response = self.client.delete("/panel/session")
+            response = self.client.delete("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()["authenticated"])
         self.assertEqual(response.cookies[SESSION_COOKIE_NAME]["max-age"], 0)
@@ -130,7 +130,7 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         gateway = _FakeGateway(logout_error=AccountServiceUnavailable())
         with patch("identity.api.views.panel_session._gateway", return_value=gateway):
             self.client.cookies[SESSION_COOKIE_NAME] = "tok"
-            response = self.client.delete("/panel/session")
+            response = self.client.delete("/panel/identity/session")
         self.assertEqual(response.status_code, 503)
         self.assertNotIn(SESSION_COOKIE_NAME, response.cookies)
         self.assertNotEqual(response.json(), {"authenticated": False})
