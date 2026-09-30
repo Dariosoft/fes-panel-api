@@ -1,14 +1,16 @@
 .PHONY: lint test check verify
 
+export PYTHONPATH := src:.
+
 lint:
 	python -m ruff check .
 	python -m ruff format --check .
 
 test:
-	python manage.py test
+	python src/manage.py test tests
 
 check:
-	python manage.py check
-	python manage.py makemigrations --check --dry-run
+	python src/manage.py check
+	python src/manage.py makemigrations --check --dry-run
 
 verify: lint check test
