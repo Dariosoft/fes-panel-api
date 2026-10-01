@@ -10,7 +10,11 @@ description: Resolve the open questions left for the current spec.
 - When I finish answering the questions, or when I interrupt the questionnaire with that option, update the spec.
 - Strike through each question that has been answered.
 - When every question has been answered satisfactorily, delete the `concerns.md` file.
+- Then, start a subagent in charge of running the `spec-generator` skill of the same project, using the final spec produced while resolving the concerns.
+- When that skill finishes running, start the `spec-tasks` skill with the generated `spec.md` and the `plan.md` produced in that same subagent thread.
+- The final result must create `tasks.md` and `uml.md`.
 
 ## Limitation
 
-This skill only modifies the `spec.md` and `concerns.md` files. It does not edit any other part of the code.
+This skill only modifies all documentation into spec/ folder (`spec.md`, `concerns.md`, `plan.md`, `tasks.md`, `uml.md`) files. It does not edit any other part of the code.
+It must always use the context belonging to the project it is in, and must not modify any other project.
