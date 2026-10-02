@@ -19,6 +19,11 @@ ACCOUNTS_PUBLIC_BASE_URL = os.environ.get(
 PANEL_PUBLIC_ORIGIN = os.environ.get("PANEL_PUBLIC_ORIGIN", "http://localhost:5174").rstrip("/")
 SESSION_COOKIE_DOMAIN = os.environ.get("SESSION_COOKIE_DOMAIN") or None
 ACCOUNT_API_TIMEOUT_SECONDS = float(os.environ.get("ACCOUNT_API_TIMEOUT_SECONDS", "5"))
+CATALOG_API_BASE_URL = os.environ.get(
+    "CATALOG_API_BASE_URL",
+    "http://catalog-api.apps.svc.cluster.local:8080",
+).rstrip("/")
+CATALOG_API_TIMEOUT_SECONDS = float(os.environ.get("CATALOG_API_TIMEOUT_SECONDS", "5"))
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -26,6 +31,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "identity",
+    "catalog",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
