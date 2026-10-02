@@ -96,6 +96,26 @@ class PanelCatalogProductViewSetTests(SimpleTestCase):
             [("create_product", "acc-1", b'{"name":"camisa"}', "application/json")],
         )
 
+    def test_create_forwards_full_multipart_content_type(self):
+        gateway = _CatalogGateway()
+        view = PanelCatalogProductViewSet.as_view({"post": "create"})
+        request = self.factory.post(
+            "/products",
+            data=b"--boundary\r\nContent-Disposition: form-data;\r\n\r\ncamisa\r\n--boundary--\r\n",
+            content_type="multipart/form-data; boundary=boundary",
+            HTTP_COOKIE=f"{SESSION_COOKIE_NAME}=tok",
+        )
+        with (
+            patch.object(
+                PanelCatalogProductViewSet, "_session_gateway", return_value=self.session_gateway
+            ),
+            patch.object(PanelCatalogProductViewSet, "_catalog_gateway", return_value=gateway),
+        ):
+            response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(gateway.calls[0][3], "multipart/form-data; boundary=boundary")
+
     def test_update_forwards_id_and_body(self):
         gateway = _CatalogGateway()
         view = PanelCatalogProductViewSet.as_view({"put": "update"})

@@ -70,9 +70,6 @@ class PanelSessionGuardMixin:
     ) -> Response:
         try:
             result = operation(self._catalog_gateway())
-            print(f"Operation result: {result}")
         except CatalogServiceUnavailable:
-            print("Catalog service unavailable")
             return Response(_CATALOG_UNAVAILABLE_BODY, status=503)
-        print(f"Sigue de largo")
         return Response(result.body, status=result.status_code)

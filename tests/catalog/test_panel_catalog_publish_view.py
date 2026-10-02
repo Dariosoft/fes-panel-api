@@ -66,6 +66,26 @@ class PanelCatalogPublishViewTests(SimpleTestCase):
             [("publish_catalog", "acc-1", b'{"products":[]}', "application/json")],
         )
 
+    def test_publish_defaults_to_json_when_body_is_absent(self):
+        gateway = _CatalogGateway()
+        request = self.factory.post(
+            "/catalog/publish",
+            data=b"",
+            content_type="text/plain",
+            HTTP_COOKIE=f"{SESSION_COOKIE_NAME}=tok",
+        )
+        request.META["CONTENT_TYPE"] = ""
+        with (
+            patch.object(
+                PanelCatalogPublishView, "_session_gateway", return_value=_SessionGateway()
+            ),
+            patch.object(PanelCatalogPublishView, "_catalog_gateway", return_value=gateway),
+        ):
+            response = PanelCatalogPublishView.as_view()(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(gateway.calls, [("publish_catalog", "acc-1", b"{}", "application/json")])
+
     def test_missing_session_is_unauthorized_and_does_not_forward(self):
         gateway = _CatalogGateway()
 

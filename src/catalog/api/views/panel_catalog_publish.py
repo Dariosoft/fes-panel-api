@@ -12,11 +12,12 @@ class PanelCatalogPublishView(PanelSessionGuardMixin, APIView):
     authentication_classes = []
 
     def post(self, request: Request) -> Response:
+        body = request.body or b"{}"
         return self._forward(
             lambda gateway: publish_catalog(
                 gateway,
                 self.owner_account_id,
-                request.body,
-                request.content_type,
+                body,
+                "application/json",
             )
         )

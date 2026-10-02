@@ -5,12 +5,12 @@ from rest_framework.viewsets import ViewSet
 
 from catalog.api.panel_session import PanelSessionGuardMixin
 from catalog.use_cases import (
-    list_products,
     create_product,
-    update_product,
     delete_product,
+    list_products,
     publish_product,
-    unpublish_product
+    unpublish_product,
+    update_product,
 )
 
 
@@ -27,7 +27,7 @@ class PanelCatalogProductViewSet(PanelSessionGuardMixin, ViewSet):
                 gateway,
                 self.owner_account_id,
                 request.body,
-                request.content_type,
+                request.META.get("CONTENT_TYPE"),
             )
         )
 
@@ -38,7 +38,7 @@ class PanelCatalogProductViewSet(PanelSessionGuardMixin, ViewSet):
                 self.owner_account_id,
                 product_id,
                 request.body,
-                request.content_type,
+                request.META.get("CONTENT_TYPE"),
             )
         )
 
