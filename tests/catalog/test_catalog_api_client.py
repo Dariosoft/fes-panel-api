@@ -78,6 +78,14 @@ class CatalogApiClientTests(unittest.TestCase):
         self.assertEqual(result.status_code, 200)
         self.assertEqual(result.body, {"items": []})
 
+    def test_list_products_includes_name_filter(self):
+        _Handler.body = {"items": []}
+
+        self.client.list_products("acc-1", "mat")
+
+        self.assertEqual(_Handler.last_query["ownerAccountId"], ["acc-1"])
+        self.assertEqual(_Handler.last_query["name"], ["mat"])
+
     def test_create_product_forwards_body_and_content_type(self):
         raw_body = b'{"name":"camisa","ownerAccountId":"otro"}'
         _Handler.body = {"id": "p1"}

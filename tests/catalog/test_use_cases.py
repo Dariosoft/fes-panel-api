@@ -63,8 +63,8 @@ class _CatalogGateway:
         self._response = response or CatalogResponse(status_code=200, body={})
         self.calls: list[tuple] = []
 
-    def list_products(self, owner_account_id: str) -> CatalogResponse:
-        self.calls.append(("list_products", owner_account_id))
+    def list_products(self, owner_account_id: str, name: str | None = None) -> CatalogResponse:
+        self.calls.append(("list_products", owner_account_id, name))
         return self._response
 
     def create_product(
@@ -106,7 +106,7 @@ class ProductUseCasesTests(unittest.TestCase):
     def test_list_products_forwards_owner(self):
         gateway = _CatalogGateway()
         result = list_products(gateway, "acc-1")
-        self.assertEqual(gateway.calls, [("list_products", "acc-1")])
+        self.assertEqual(gateway.calls, [("list_products", "acc-1", None)])
         self.assertEqual(result.status_code, 200)
 
     def test_create_product_forwards_owner_and_body(self):

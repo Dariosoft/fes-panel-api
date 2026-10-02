@@ -6,3 +6,4 @@ CATALOG_PUBLISH_PATH = "/catalog/publish"
 
 OWNER_ACCOUNT_ID_QUERY_PARAM = "ownerAccountId"
 OWNER_ACCOUNT_ID_KEY = "ownerAccountId"
+NAME_QUERY_PARAM = "name"

@@ -19,7 +19,8 @@ class PanelCatalogProductViewSet(PanelSessionGuardMixin, ViewSet):
     authentication_classes = []
 
     def list(self, request: Request) -> Response:
-        return self._forward(lambda gateway: list_products(gateway, self.owner_account_id))
+        name = request.query_params.get("name")
+        return self._forward(lambda gateway: list_products(gateway, self.owner_account_id, name))
 
     def create(self, request: Request) -> Response:
         return self._forward(

@@ -36,8 +36,8 @@ class _CatalogGateway:
             raise self._error
         return self._response
 
-    def list_products(self, owner_account_id):
-        return self._record("list_products", owner_account_id)
+    def list_products(self, owner_account_id, name=None):
+        return self._record("list_products", owner_account_id, name)
 
     def create_product(self, owner_account_id, body, content_type):
         return self._record("create_product", owner_account_id, body, content_type)

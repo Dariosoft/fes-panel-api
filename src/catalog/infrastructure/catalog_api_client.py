@@ -8,6 +8,7 @@ from common.contracts.catalog_api import (
     CATALOG_PRODUCT_UNPUBLISH_PATH,
     CATALOG_PRODUCTS_PATH,
     CATALOG_PUBLISH_PATH,
+    NAME_QUERY_PARAM,
     OWNER_ACCOUNT_ID_QUERY_PARAM,
 )
 from common.http import JsonRequest, RemoteServiceError, request_json
@@ -18,8 +19,8 @@ class CatalogApiClient:
         self._base_url = base_url.rstrip("/")
         self._timeout_seconds = timeout_seconds
 
-    def list_products(self, owner_account_id: str) -> CatalogResponse:
-        return self._send("GET", CATALOG_PRODUCTS_PATH, owner_account_id)
+    def list_products(self, owner_account_id: str, name: str | None = None) -> CatalogResponse:
+        return self._send("GET", CATALOG_PRODUCTS_PATH, owner_account_id, name=name)
 
     def create_product(
         self,
@@ -66,10 +67,11 @@ class CatalogApiClient:
         owner_account_id: str,
         body: bytes | None = None,
         content_type: str | None = None,
+        name: str | None = None,
     ) -> CatalogResponse:
         call = JsonRequest(
             method=method,
-            path=self._with_owner(path, owner_account_id),
+            path=self._with_query(path, owner_account_id, name),
             timeout_seconds=self._timeout_seconds,
             body=body,
             content_type=content_type,
@@ -81,6 +83,8 @@ class CatalogApiClient:
         return CatalogResponse(status_code=status_code, body=response_body)
 
     @staticmethod
-    def _with_owner(path: str, owner_account_id: str) -> str:
-        query = urlencode({OWNER_ACCOUNT_ID_QUERY_PARAM: owner_account_id})
-        return f"{path}?{query}"
+    def _with_query(path: str, owner_account_id: str, name: str | None) -> str:
+        params = {OWNER_ACCOUNT_ID_QUERY_PARAM: owner_account_id}
+        if name:
+            params[NAME_QUERY_PARAM] = name
+        return f"{path}?{urlencode(params)}"

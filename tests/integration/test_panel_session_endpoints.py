@@ -55,6 +55,14 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         self.assertEqual(parsed.path, "/accounts/login/google")
         self.assertEqual(parse_qs(parsed.query)["return_to"], ["https://panel.example.com"])
 
+    def test_google_login_forwards_the_current_path(self):
+        response = self.client.get("/panel/identity/login/google", {"return_to": "/catalog"})
+        parsed = urlparse(response["Location"])
+        self.assertEqual(
+            parse_qs(parsed.query)["return_to"],
+            ["https://panel.example.com/catalog"],
+        )
+
     @override_settings(
         ACCOUNT_API_BASE_URL="http://account-api.apps.svc.cluster.local:8080",
         ACCOUNTS_PUBLIC_BASE_URL="https://api.example.com",

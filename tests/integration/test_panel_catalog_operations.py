@@ -23,8 +23,8 @@ class _CatalogGateway:
         self.calls.append((name, *args))
         return self._response
 
-    def list_products(self, owner_account_id):
-        return self._record("list_products", owner_account_id)
+    def list_products(self, owner_account_id, name=None):
+        return self._record("list_products", owner_account_id, name)
 
     def create_product(self, owner_account_id, body, content_type):
         return self._record("create_product", owner_account_id, body, content_type)
@@ -61,7 +61,7 @@ class PanelCatalogOperationTests(SimpleTestCase):
     def test_list_products_forwards_owner(self):
         catalog = _CatalogGateway()
         self._run("get", "/panel/catalog/products", catalog)
-        self.assertEqual(catalog.calls, [("list_products", "acc-session")])
+        self.assertEqual(catalog.calls, [("list_products", "acc-session", None)])
 
     def test_create_product_forwards_owner_and_body(self):
         catalog = _CatalogGateway()

@@ -4,8 +4,8 @@ from catalog.dtos import CatalogResponse
 
 
 class CatalogGateway(Protocol):
-    def list_products(self, owner_account_id: str) -> CatalogResponse:
-        """List the products owned by the session account."""
+    def list_products(self, owner_account_id: str, name: str | None = None) -> CatalogResponse:
+        """List the products owned by the session account, optionally filtered by name."""
 
     def create_product(
         self,

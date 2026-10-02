@@ -25,8 +25,8 @@ class _CatalogGateway:
             raise self._error
         return self._response
 
-    def list_products(self, owner_account_id):
-        return self._record("list_products", owner_account_id)
+    def list_products(self, owner_account_id, name=None):
+        return self._record("list_products", owner_account_id, name)
 
     def create_product(self, owner_account_id, body, content_type):
         return self._record("create_product", owner_account_id, body, content_type)
@@ -71,7 +71,25 @@ class PanelCatalogProductViewSetTests(SimpleTestCase):
         response = self._call("list", "get", "/products", gateway)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(gateway.calls, [("list_products", "acc-1")])
+        self.assertEqual(gateway.calls, [("list_products", "acc-1", None)])
+
+    def test_list_forwards_name_filter(self):
+        gateway = _CatalogGateway()
+        view = PanelCatalogProductViewSet.as_view({"get": "list"})
+        request = self.factory.get(
+            "/products?name=mat",
+            HTTP_COOKIE=f"{SESSION_COOKIE_NAME}=tok",
+        )
+        with (
+            patch.object(
+                PanelCatalogProductViewSet, "_session_gateway", return_value=self.session_gateway
+            ),
+            patch.object(PanelCatalogProductViewSet, "_catalog_gateway", return_value=gateway),
+        ):
+            response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(gateway.calls, [("list_products", "acc-1", "mat")])
 
     def test_create_forwards_owner_and_body(self):
         gateway = _CatalogGateway()

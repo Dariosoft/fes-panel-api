@@ -15,7 +15,7 @@ class FakeCatalogGateway:
     def _response(self) -> CatalogResponse:
         return CatalogResponse(status_code=200, body={})
 
-    def list_products(self, owner_account_id: str) -> CatalogResponse:
+    def list_products(self, owner_account_id: str, name: str | None = None) -> CatalogResponse:
         return self._response()
 
     def create_product(
