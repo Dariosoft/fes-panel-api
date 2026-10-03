@@ -3,3 +3,6 @@ ACCOUNT_LOGOUT_PATH = "/accounts/logout"
 ACCOUNT_SESSION_PATH = "/accounts/session"
 
 RETURN_TO_PARAM = "return_to"
+
+SESSION_AUTHENTICATED_KEY = "authenticated"
+SESSION_ID_KEY = "id"

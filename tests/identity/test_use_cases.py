@@ -19,6 +19,31 @@ class BuildGoogleLoginRedirectTests(unittest.TestCase):
         self.assertEqual(parsed.path, "/accounts/login/google")
         self.assertEqual(parse_qs(parsed.query)["return_to"], ["https://panel.example.com"])
 
+    def test_return_to_appends_the_requested_path(self):
+        url = build_google_login_redirect_url(
+            "http://account-api.internal:8080/",
+            "https://panel.example.com",
+            "/catalog?page=1",
+        )
+        parsed = urlparse(url)
+        self.assertEqual(
+            parse_qs(parsed.query)["return_to"],
+            ["https://panel.example.com/catalog?page=1"],
+        )
+
+    def test_unsafe_return_to_falls_back_to_the_origin(self):
+        for unsafe in ("//evil.example", "https://evil.example/catalog", "catalog"):
+            url = build_google_login_redirect_url(
+                "http://account-api.internal:8080",
+                "https://panel.example.com",
+                unsafe,
+            )
+            parsed = urlparse(url)
+            self.assertEqual(
+                parse_qs(parsed.query)["return_to"],
+                ["https://panel.example.com"],
+            )
+
 
 class ResolvePanelSessionTests(unittest.TestCase):
     def test_success_propagates_payload(self):
