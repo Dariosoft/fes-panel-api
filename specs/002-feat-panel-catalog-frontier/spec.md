@@ -8,12 +8,15 @@ funcionalidad expone `/panel/catalog/...` como frontera: valida la cookie
 `fes_session` contra el servicio de cuentas y reenvía cada operación al servicio
 de catálogo propagando la cuenta dueña de la sesión, de modo que la fuente de
 verdad de productos siga viviendo fuera de este repositorio y este no persista
-productos.
+productos. Sobre esa frontera se resuelven también los encuadres de integración
+que aparecieron al conectar el panel real: el filtro de productos por nombre, el
+reenvío fiel de cuerpos multipart, el cuerpo por defecto al publicar y el retorno
+a la página actual tras iniciar sesión.
 
 ## Usuarios / actores
 
 - Vendedor u operador con sesión activa que gestiona productos desde el panel.
-- Cliente web del panel (`panel-web`), que consume las rutas de catálogo.
+- Cliente web del panel (`panel-web`), que consume las rutas de catálogo y de sesión.
 - Servicio de cuentas (`account-api`), dueño de la sesión compartida y de la
   cookie `fes_session`.
 - Servicio de catálogo (`catalog-api`), fuente de verdad de productos, etapas,
@@ -25,6 +28,8 @@ productos.
 - H2: Como vendedor del panel quiero publicar y despublicar un producto para controlar qué se muestra.
 - H3: Como vendedor del panel quiero publicar mi catálogo completo para poner a la venta de una vez los productos visibles de mi sesión.
 - H4: Como operador sin sesión quiero recibir una respuesta de no autorizado clara para saber que debo iniciar sesión antes de operar el catálogo.
+- H5: Como vendedor del panel quiero buscar mis productos por nombre para encontrar lo que administro cuando el catálogo crece.
+- H6: Como vendedor del panel quiero volver a la página donde estaba después de iniciar sesión para continuar mi tarea sin navegar de nuevo.
 
 ## Requisitos funcionales (criterios de aceptación en EARS)
 
@@ -50,6 +55,11 @@ productos.
 - RF-20: EL SISTEMA aceptará peticiones CORS con credenciales desde el origen del panel.
 - RF-21: CUANDO `POST /panel/catalog/publish` no tenga productos por publicar, EL SISTEMA responderá 200 con conteo 0 publicados; no es error.
 - RF-22: CUANDO el servicio de catálogo responde 4xx, EL SISTEMA reenviará ese estado y su cuerpo al cliente.
+- RF-23: CUANDO un cliente solicita `GET /panel/catalog/products` con el parámetro de filtro `name`, EL SISTEMA reenviará ese parámetro al servicio de catálogo y devolverá el resultado filtrado por nombre que determine el servicio de catálogo.
+- RF-24: CUANDO un cliente crea o actualiza un producto con `Content-Type` `multipart/form-data`, EL SISTEMA reenviará al servicio de catálogo el `Content-Type` completo recibido, incluido su `boundary`, para que el servicio de catálogo pueda parsear el cuerpo.
+- RF-25: CUANDO un cliente solicita `POST /panel/catalog/publish` sin cuerpo, EL SISTEMA reenviará al servicio de catálogo un cuerpo JSON vacío `{}` con `Content-Type` `application/json`.
+- RF-26: CUANDO un navegador solicita `GET /panel/identity/login/google` con un `return_to` que es una ruta relativa segura, EL SISTEMA armará el `return_to` hacia el servicio de cuentas como el origen público del panel seguido de esa ruta.
+- RF-27: SI el `return_to` de `GET /panel/identity/login/google` falta, no empieza con `/` o empieza con `//`, ENTONCES EL SISTEMA usará solo el origen público del panel como `return_to`.
 
 ## Requisitos no funcionales
 
@@ -58,6 +68,7 @@ productos.
 - No se crean tablas ni migraciones nuevas en el panel.
 - Los mensajes visibles al usuario estarán en español.
 - Las respuestas de error propias de la frontera comparten el shape `{"error","message"}` ya usado por la frontera de identidad.
+- El panel no interpreta ni reconstruye el cuerpo de las operaciones: lo reenvía tal cual, preservando su `Content-Type` entrante.
 
 ## Casos límite
 
@@ -69,6 +80,11 @@ productos.
 - Producto `{id}` inexistente o de otra cuenta: se reenvía la operación y la respuesta del servicio de catálogo determina el resultado (RF-13, RF-22).
 - `POST /panel/catalog/publish` sin productos por publicar: responde 200 con 0 publicados; no es error (RF-21).
 - Cliente que envía `ownerAccountId` en el cuerpo: se ignora y se usa el de la sesión (RF-17).
+- `GET /panel/catalog/products?name=...` sin coincidencias: se reenvía el filtro y la respuesta del servicio de catálogo determina el resultado (RF-23).
+- Crear o actualizar con `multipart/form-data` (imagen con `boundary`): se reenvía el `Content-Type` completo y el servicio de catálogo parsea el multipart (RF-24).
+- `POST /panel/catalog/publish` sin cuerpo o con un `Content-Type` distinto de JSON (el cliente Angular envía `text/plain`): se reenvía `{}` como `application/json` (RF-25).
+- `return_to` que no es una ruta relativa segura (`//otro`, `https://otro`, vacío): se usa solo el origen público del panel (RF-27).
+- La validación por origen del `return_to` (que la ruta pertenezca al panel) es responsabilidad de `account-api`; el panel solo entrega origen + ruta relativa (RF-26, RF-27).
 
 ## Fuera de alcance
 
@@ -81,6 +97,9 @@ productos.
 - Persistir productos, etapas, dueños o imágenes en la base del panel.
 - Validar o derivar campos del dominio del producto (moneda, imágenes, precios).
 - Autenticación distinta de la sesión compartida de cuentas.
+- Filtrar, normalizar o paginar el parámetro `name` en el panel; el filtrado por nombre es del servicio de catálogo.
+- Reconstruir, reinterpretar o validar en el panel los cuerpos multipart o JSON reenviados.
+- Validar por origen el `return_to`; esa validación vive en `account-api`.
 
 ## Criterios de finalización
 
@@ -88,6 +107,8 @@ productos.
 - La frontera responde 401 sin sesión con `{"error":"no_autenticado","message":"..."}` y 503 con `{"error":"servicio_no_disponible","message":"..."}` cuando el servicio de cuentas o el de catálogo no está disponible.
 - Los 4xx de `catalog-api` se reenvían con su estado y cuerpo; los 5xx y la indisponibilidad se traducen a 503.
 - `POST /panel/catalog/publish` sin productos responde 200 con 0 publicados.
+- `GET /panel/catalog/products` propaga el filtro `name` y create/update preservan el `Content-Type` completo (multipart con `boundary`).
+- `GET /panel/identity/login/google` arma el `return_to` como origen público más la ruta relativa segura recibida.
 - No existen tablas ni migraciones nuevas en el panel.
 - `GET /health/live` y `GET /health/ready` siguen respondiendo tras el cambio.
 
