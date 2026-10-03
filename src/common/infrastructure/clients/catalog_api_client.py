@@ -1,7 +1,5 @@
 from urllib.parse import urlencode
 
-from catalog.domain.errors import CatalogServiceUnavailable
-from catalog.dtos import CatalogResponse
 from common.contracts.catalog_api import (
     CATALOG_PRODUCT_ITEM_PATH,
     CATALOG_PRODUCT_PUBLISH_PATH,
@@ -11,6 +9,8 @@ from common.contracts.catalog_api import (
     NAME_QUERY_PARAM,
     OWNER_ACCOUNT_ID_QUERY_PARAM,
 )
+from common.dtos import ServiceResponse
+from common.errors import CatalogApiUnavailable
 from common.http import JsonRequest, RemoteServiceError, request_json
 
 
@@ -19,7 +19,7 @@ class CatalogApiClient:
         self._base_url = base_url.rstrip("/")
         self._timeout_seconds = timeout_seconds
 
-    def list_products(self, owner_account_id: str, name: str | None = None) -> CatalogResponse:
+    def list_products(self, owner_account_id: str, name: str | None = None) -> ServiceResponse:
         return self._send("GET", CATALOG_PRODUCTS_PATH, owner_account_id, name=name)
 
     def create_product(
@@ -27,7 +27,7 @@ class CatalogApiClient:
         owner_account_id: str,
         body: bytes,
         content_type: str | None,
-    ) -> CatalogResponse:
+    ) -> ServiceResponse:
         return self._send("POST", CATALOG_PRODUCTS_PATH, owner_account_id, body, content_type)
 
     def update_product(
@@ -36,19 +36,19 @@ class CatalogApiClient:
         product_id: str,
         body: bytes,
         content_type: str | None,
-    ) -> CatalogResponse:
+    ) -> ServiceResponse:
         path = CATALOG_PRODUCT_ITEM_PATH.format(product_id=product_id)
         return self._send("PUT", path, owner_account_id, body, content_type)
 
-    def delete_product(self, owner_account_id: str, product_id: str) -> CatalogResponse:
+    def delete_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         path = CATALOG_PRODUCT_ITEM_PATH.format(product_id=product_id)
         return self._send("DELETE", path, owner_account_id)
 
-    def publish_product(self, owner_account_id: str, product_id: str) -> CatalogResponse:
+    def publish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         path = CATALOG_PRODUCT_PUBLISH_PATH.format(product_id=product_id)
         return self._send("POST", path, owner_account_id)
 
-    def unpublish_product(self, owner_account_id: str, product_id: str) -> CatalogResponse:
+    def unpublish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         path = CATALOG_PRODUCT_UNPUBLISH_PATH.format(product_id=product_id)
         return self._send("POST", path, owner_account_id)
 
@@ -57,7 +57,7 @@ class CatalogApiClient:
         owner_account_id: str,
         body: bytes,
         content_type: str | None,
-    ) -> CatalogResponse:
+    ) -> ServiceResponse:
         return self._send("POST", CATALOG_PUBLISH_PATH, owner_account_id, body, content_type)
 
     def _send(
@@ -68,7 +68,7 @@ class CatalogApiClient:
         body: bytes | None = None,
         content_type: str | None = None,
         name: str | None = None,
-    ) -> CatalogResponse:
+    ) -> ServiceResponse:
         call = JsonRequest(
             method=method,
             path=self._with_query(path, owner_account_id, name),
@@ -79,8 +79,8 @@ class CatalogApiClient:
         try:
             status_code, response_body = request_json(self._base_url, call)
         except RemoteServiceError as exc:
-            raise CatalogServiceUnavailable from exc
-        return CatalogResponse(status_code=status_code, body=response_body)
+            raise CatalogApiUnavailable from exc
+        return ServiceResponse(status_code=status_code, body=response_body)
 
     @staticmethod
     def _with_query(path: str, owner_account_id: str, name: str | None) -> str:

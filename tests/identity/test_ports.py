@@ -1,29 +1,36 @@
 import unittest
 
-from identity.dtos import LogoutResult, SessionPayload
-from identity.ports import AccountSessionGateway
+from common.dtos import AccountLogout, AccountSession
+from common.ports import AccountApiGateway
 
 
-class FakeAccountSessionGateway:
-    def get_session(self, fes_session: str | None) -> SessionPayload:
+class FakeAccountApiGateway:
+    def get_session(self, fes_session: str | None) -> AccountSession:
         if fes_session:
-            return SessionPayload(
+            return AccountSession(
                 status_code=200,
                 body={"authenticated": True, "id": "1", "email": "a@b.c", "name": "A"},
+                authenticated=True,
+                account_id="1",
             )
-        return SessionPayload(status_code=200, body={"authenticated": False})
+        return AccountSession(
+            status_code=200,
+            body={"authenticated": False},
+            authenticated=False,
+            account_id=None,
+        )
 
-    def logout(self, fes_session: str | None) -> LogoutResult:
-        return LogoutResult(
+    def logout(self, fes_session: str | None) -> AccountLogout:
+        return AccountLogout(
             status_code=200,
             body={"authenticated": False},
             had_active_session=bool(fes_session),
         )
 
 
-class AccountSessionGatewayTests(unittest.TestCase):
+class AccountApiGatewayTests(unittest.TestCase):
     def test_fake_implements_port(self):
-        gateway: AccountSessionGateway = FakeAccountSessionGateway()
+        gateway: AccountApiGateway = FakeAccountApiGateway()
         session = gateway.get_session("token")
         self.assertTrue(session.body["authenticated"])
         logout = gateway.logout(None)

@@ -4,8 +4,8 @@ import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from catalog.domain import CatalogServiceUnavailable
-from catalog.infrastructure.catalog_api_client import CatalogApiClient
+from common.errors import CatalogApiUnavailable
+from common.infrastructure.clients import CatalogApiClient
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -156,12 +156,12 @@ class CatalogApiClientTests(unittest.TestCase):
     def test_server_error_maps_to_unavailable(self):
         _Handler.status = 503
 
-        with self.assertRaises(CatalogServiceUnavailable):
+        with self.assertRaises(CatalogApiUnavailable):
             self.client.list_products("acc-1")
 
     def test_connection_failure_maps_to_unavailable(self):
         self.server.shutdown()
         broken = CatalogApiClient(f"http://127.0.0.1:{self.port}", timeout_seconds=0.5)
 
-        with self.assertRaises(CatalogServiceUnavailable):
+        with self.assertRaises(CatalogApiUnavailable):
             broken.list_products("acc-1")

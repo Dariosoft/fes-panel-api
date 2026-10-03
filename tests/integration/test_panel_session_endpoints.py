@@ -4,9 +4,10 @@ from urllib.parse import parse_qs, urlparse
 from django.test import SimpleTestCase, override_settings
 from rest_framework.test import APIClient
 
+from common.contracts.account_api import SESSION_COOKIE_NAME
+from common.dtos import AccountLogout, AccountSession
+from common.errors import AccountApiUnavailable
 from common.health.views import live, ready
-from identity.domain import SESSION_COOKIE_NAME, AccountServiceUnavailable
-from identity.dtos import LogoutResult, SessionPayload
 
 
 class _FakeGateway:
@@ -76,12 +77,16 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         self.assertEqual(parsed.path, "/accounts/login/google")
 
     def test_session_proxies_payload(self):
-        payload = SessionPayload(
+        payload = AccountSession(
             status_code=200,
             body={"authenticated": True, "id": "1", "email": "a@b.c", "name": "A"},
+            authenticated=True,
+            account_id="1",
         )
         gateway = _FakeGateway(session_payload=payload)
-        with patch("identity.api.views.panel_session._gateway", return_value=gateway):
+        with patch(
+            "identity.api.views.panel_session.build_account_api_gateway", return_value=gateway
+        ):
             self.client.cookies[SESSION_COOKIE_NAME] = "tok"
             response = self.client.get("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
@@ -89,16 +94,20 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         self.assertEqual(gateway.last_session_cookie, "tok")
 
     def test_session_anonymous(self):
-        payload = SessionPayload(status_code=200, body={"authenticated": False})
+        payload = AccountSession(200, {"authenticated": False}, False, None)
         gateway = _FakeGateway(session_payload=payload)
-        with patch("identity.api.views.panel_session._gateway", return_value=gateway):
+        with patch(
+            "identity.api.views.panel_session.build_account_api_gateway", return_value=gateway
+        ):
             response = self.client.get("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"authenticated": False})
 
     def test_session_unavailable_is_503_distinct_shape(self):
-        gateway = _FakeGateway(session_error=AccountServiceUnavailable())
-        with patch("identity.api.views.panel_session._gateway", return_value=gateway):
+        gateway = _FakeGateway(session_error=AccountApiUnavailable())
+        with patch(
+            "identity.api.views.panel_session.build_account_api_gateway", return_value=gateway
+        ):
             response = self.client.get("/panel/identity/session")
         self.assertEqual(response.status_code, 503)
         body = response.json()
@@ -106,13 +115,15 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         self.assertIn("message", body)
 
     def test_logout_clears_cookie(self):
-        result = LogoutResult(
+        result = AccountLogout(
             status_code=200,
             body={"authenticated": False},
             had_active_session=True,
         )
         gateway = _FakeGateway(logout_result=result)
-        with patch("identity.api.views.panel_session._gateway", return_value=gateway):
+        with patch(
+            "identity.api.views.panel_session.build_account_api_gateway", return_value=gateway
+        ):
             self.client.cookies[SESSION_COOKIE_NAME] = "tok"
             response = self.client.delete("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
@@ -122,21 +133,25 @@ class PanelIdentityEndpointTests(SimpleTestCase):
         self.assertEqual(response.cookies[SESSION_COOKIE_NAME]["max-age"], 0)
 
     def test_logout_without_session_clears_cookie(self):
-        result = LogoutResult(
+        result = AccountLogout(
             status_code=200,
             body={"authenticated": False},
             had_active_session=False,
         )
         gateway = _FakeGateway(logout_result=result)
-        with patch("identity.api.views.panel_session._gateway", return_value=gateway):
+        with patch(
+            "identity.api.views.panel_session.build_account_api_gateway", return_value=gateway
+        ):
             response = self.client.delete("/panel/identity/session")
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()["authenticated"])
         self.assertEqual(response.cookies[SESSION_COOKIE_NAME]["max-age"], 0)
 
     def test_logout_unavailable_keeps_cookie(self):
-        gateway = _FakeGateway(logout_error=AccountServiceUnavailable())
-        with patch("identity.api.views.panel_session._gateway", return_value=gateway):
+        gateway = _FakeGateway(logout_error=AccountApiUnavailable())
+        with patch(
+            "identity.api.views.panel_session.build_account_api_gateway", return_value=gateway
+        ):
             self.client.cookies[SESSION_COOKIE_NAME] = "tok"
             response = self.client.delete("/panel/identity/session")
         self.assertEqual(response.status_code, 503)

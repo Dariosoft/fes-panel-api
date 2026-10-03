@@ -1,15 +1,15 @@
-from catalog.domain.errors import SessionServiceUnavailable
-from catalog.dtos import PanelSession
-from catalog.ports import PanelSessionGateway
+from common.dtos import AccountSession
+from common.errors import AccountApiUnavailable
+from common.ports import AccountApiGateway
 
 
 def resolve_panel_owner(
-    session_gateway: PanelSessionGateway,
+    session_gateway: AccountApiGateway,
     fes_session: str | None,
-) -> PanelSession:
+) -> AccountSession:
     try:
-        return session_gateway.resolve(fes_session)
-    except SessionServiceUnavailable:
+        return session_gateway.get_session(fes_session)
+    except AccountApiUnavailable:
         raise
     except Exception as exc:
-        raise SessionServiceUnavailable from exc
+        raise AccountApiUnavailable from exc

@@ -4,14 +4,12 @@ from rest_framework.exceptions import APIException
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from catalog.api.gateways import build_catalog_gateway, build_session_gateway
-from catalog.domain.constants import SESSION_COOKIE_NAME
-from catalog.domain.errors import CatalogServiceUnavailable, SessionServiceUnavailable
-from catalog.dtos import CatalogResponse
-from catalog.infrastructure.account_session_client import AccountSessionClient
-from catalog.infrastructure.catalog_api_client import CatalogApiClient
-from catalog.ports import CatalogGateway
 from catalog.use_cases import resolve_panel_owner
+from common.contracts.account_api import SESSION_COOKIE_NAME
+from common.dtos import ServiceResponse
+from common.errors import AccountApiUnavailable, CatalogApiUnavailable
+from common.infrastructure import build_account_api_gateway, build_catalog_api_gateway
+from common.ports import AccountApiGateway, CatalogApiGateway
 
 _SESSION_UNAVAILABLE_BODY = {
     "error": "servicio_no_disponible",
@@ -40,18 +38,18 @@ class _Unauthenticated(APIException):
 class PanelSessionGuardMixin:
     owner_account_id: str
 
-    def _session_gateway(self) -> AccountSessionClient:
-        return build_session_gateway()
+    def _session_gateway(self) -> AccountApiGateway:
+        return build_account_api_gateway()
 
-    def _catalog_gateway(self) -> CatalogApiClient:
-        return build_catalog_gateway()
+    def _catalog_gateway(self) -> CatalogApiGateway:
+        return build_catalog_api_gateway()
 
     def initial(self, request: Request, *args, **kwargs) -> None:
         super().initial(request, *args, **kwargs)
         fes_session = request.COOKIES.get(SESSION_COOKIE_NAME)
         try:
             session = resolve_panel_owner(self._session_gateway(), fes_session)
-        except SessionServiceUnavailable:
+        except AccountApiUnavailable:
             raise _SessionUnavailable from None
         if not session.authenticated or not session.account_id:
             raise _Unauthenticated
@@ -66,10 +64,10 @@ class PanelSessionGuardMixin:
 
     def _forward(
         self,
-        operation: Callable[[CatalogGateway], CatalogResponse],
+        operation: Callable[[CatalogApiGateway], ServiceResponse],
     ) -> Response:
         try:
             result = operation(self._catalog_gateway())
-        except CatalogServiceUnavailable:
+        except CatalogApiUnavailable:
             return Response(_CATALOG_UNAVAILABLE_BODY, status=503)
         return Response(result.body, status=result.status_code)

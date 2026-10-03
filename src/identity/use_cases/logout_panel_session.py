@@ -1,18 +1,18 @@
-from identity.domain.errors import AccountServiceUnavailable
+from common.errors import AccountApiUnavailable
+from common.ports import AccountApiGateway
 from identity.dtos import LogoutPanelSessionResult
-from identity.ports import AccountSessionGateway
 
 
 def logout_panel_session(
-    gateway: AccountSessionGateway,
+    gateway: AccountApiGateway,
     fes_session: str | None,
 ) -> LogoutPanelSessionResult:
     try:
         result = gateway.logout(fes_session)
-    except AccountServiceUnavailable:
+    except AccountApiUnavailable:
         raise
     except Exception as exc:
-        raise AccountServiceUnavailable from exc
+        raise AccountApiUnavailable from exc
 
     return LogoutPanelSessionResult(
         status_code=result.status_code,

@@ -1,15 +1,15 @@
-from identity.domain.errors import AccountServiceUnavailable
-from identity.dtos import SessionPayload
-from identity.ports import AccountSessionGateway
+from common.dtos import AccountSession
+from common.errors import AccountApiUnavailable
+from common.ports import AccountApiGateway
 
 
 def resolve_panel_session(
-    gateway: AccountSessionGateway,
+    gateway: AccountApiGateway,
     fes_session: str | None,
-) -> SessionPayload:
+) -> AccountSession:
     try:
         return gateway.get_session(fes_session)
-    except AccountServiceUnavailable:
+    except AccountApiUnavailable:
         raise
     except Exception as exc:
-        raise AccountServiceUnavailable from exc
+        raise AccountApiUnavailable from exc

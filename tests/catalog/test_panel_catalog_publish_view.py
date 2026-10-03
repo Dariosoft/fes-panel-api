@@ -3,8 +3,9 @@ from unittest.mock import patch
 from django.test import RequestFactory, SimpleTestCase
 
 from catalog.api.views import PanelCatalogPublishView
-from catalog.domain import SESSION_COOKIE_NAME, CatalogServiceUnavailable
-from catalog.dtos import CatalogResponse, PanelSession
+from common.contracts.account_api import SESSION_COOKIE_NAME
+from common.dtos import AccountSession, ServiceResponse
+from common.errors import CatalogApiUnavailable
 
 
 class _SessionGateway:
@@ -12,17 +13,17 @@ class _SessionGateway:
         self._authenticated = authenticated
         self._error = error
 
-    def resolve(self, fes_session: str | None) -> PanelSession:
+    def get_session(self, fes_session: str | None) -> AccountSession:
         if self._error:
             raise self._error
         if not self._authenticated:
-            return PanelSession(authenticated=False, account_id=None)
-        return PanelSession(authenticated=True, account_id="acc-1")
+            return AccountSession(200, {}, False, None)
+        return AccountSession(200, {}, True, "acc-1")
 
 
 class _CatalogGateway:
-    def __init__(self, response: CatalogResponse | None = None, error: Exception | None = None):
-        self._response = response or CatalogResponse(status_code=200, body={"published": 0})
+    def __init__(self, response: ServiceResponse | None = None, error: Exception | None = None):
+        self._response = response or ServiceResponse(status_code=200, body={"published": 0})
         self._error = error
         self.calls: list[tuple] = []
 
@@ -55,7 +56,7 @@ class PanelCatalogPublishViewTests(SimpleTestCase):
             return PanelCatalogPublishView.as_view()(request)
 
     def test_forwards_body_and_owner_and_propagates_count(self):
-        gateway = _CatalogGateway(response=CatalogResponse(status_code=200, body={"published": 0}))
+        gateway = _CatalogGateway(response=ServiceResponse(status_code=200, body={"published": 0}))
 
         response = self._post(gateway)
 
@@ -98,7 +99,7 @@ class PanelCatalogPublishViewTests(SimpleTestCase):
         self.assertEqual(gateway.calls, [])
 
     def test_catalog_error_is_unavailable(self):
-        gateway = _CatalogGateway(error=CatalogServiceUnavailable())
+        gateway = _CatalogGateway(error=CatalogApiUnavailable())
 
         response = self._post(gateway)
 

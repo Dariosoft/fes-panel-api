@@ -4,6 +4,6 @@ from common.json_types import JsonBody
 
 
 @dataclass(frozen=True)
-class CatalogResponse:
+class ServiceResponse:
     status_code: int
     body: JsonBody

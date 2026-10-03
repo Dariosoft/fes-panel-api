@@ -1,11 +1,11 @@
-from catalog.dtos import CatalogResponse
-from catalog.ports import CatalogGateway
+from common.dtos import ServiceResponse
+from common.ports import CatalogApiGateway
 
 
 def publish_catalog(
-    catalog_gateway: CatalogGateway,
+    catalog_gateway: CatalogApiGateway,
     owner_account_id: str,
     body: bytes,
     content_type: str | None,
-) -> CatalogResponse:
+) -> ServiceResponse:
     return catalog_gateway.publish_catalog(owner_account_id, body, content_type)

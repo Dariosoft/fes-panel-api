@@ -4,18 +4,19 @@ from django.test import RequestFactory, SimpleTestCase
 from rest_framework.response import Response
 
 from catalog.api.views import PanelCatalogProductViewSet
-from catalog.domain import SESSION_COOKIE_NAME, CatalogServiceUnavailable
-from catalog.dtos import CatalogResponse, PanelSession
+from common.contracts.account_api import SESSION_COOKIE_NAME
+from common.dtos import AccountSession, ServiceResponse
+from common.errors import CatalogApiUnavailable
 
 
 class _SessionGateway:
-    def resolve(self, fes_session: str | None) -> PanelSession:
-        return PanelSession(authenticated=True, account_id="acc-1")
+    def get_session(self, fes_session: str | None) -> AccountSession:
+        return AccountSession(200, {}, True, "acc-1")
 
 
 class _CatalogGateway:
-    def __init__(self, response: CatalogResponse | None = None, error: Exception | None = None):
-        self._response = response or CatalogResponse(status_code=200, body={"ok": True})
+    def __init__(self, response: ServiceResponse | None = None, error: Exception | None = None):
+        self._response = response or ServiceResponse(status_code=200, body={"ok": True})
         self._error = error
         self.calls: list[tuple] = []
 
@@ -177,7 +178,7 @@ class PanelCatalogProductViewSetTests(SimpleTestCase):
         )
 
     def test_catalog_error_is_unavailable(self):
-        gateway = _CatalogGateway(error=CatalogServiceUnavailable())
+        gateway = _CatalogGateway(error=CatalogApiUnavailable())
 
         response = self._call("list", "get", "/products", gateway)
 
@@ -186,7 +187,7 @@ class PanelCatalogProductViewSetTests(SimpleTestCase):
 
     def test_client_error_is_proxied(self):
         gateway = _CatalogGateway(
-            response=CatalogResponse(status_code=404, body={"error": "no_encontrado"})
+            response=ServiceResponse(status_code=404, body={"error": "no_encontrado"})
         )
 
         response = self._call("destroy", "delete", "/products/p9", gateway, {"product_id": "p9"})

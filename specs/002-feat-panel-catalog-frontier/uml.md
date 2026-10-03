@@ -1,442 +1,293 @@
-# UML 002 — Frontera de catálogo: drafts, publicación y sesión
+# UML 002 - Frontera de catalogo: drafts, publicacion y sesion
 
-Diagramas **as-built**, alineados con `plan.md`/`tasks.md` y con las convenciones
-de `panel-api` (`src/` para código, `tests/` para pruebas). Prosa en español;
-diagramas en Mermaid.
+Diagramas **as-built**. Los clientes, puertos, DTOs, errores y contratos de
+servicios externos pertenecen a `common`; identity y catalog contienen solo su
+API, navegacion/casos de uso y DTOs estrictamente locales.
 
-## 1. Contexto
-
-`panel-api` no es dueño de los productos. Expone `/panel/catalog/...` como
-frontera: resuelve la cookie `fes_session` contra `account-api` y, con una sesión
-autenticada, reenvía cada operación a `catalog-api` propagando la cuenta dueña
-como `ownerAccountId`. La frontera no persiste productos, etapas, dueños ni
-imágenes, y no valida campos de dominio del producto. Además, el redirect de
-login arma un `return_to` de origen + ruta relativa segura para volver a la
-página actual.
-
-Layout as-built (módulo `catalog`, sin `shops`):
+## 1. Layout
 
 ```text
 src/
-├── common/
-│   ├── contracts/
-│   │   ├── account_api.py      # /accounts/session + claves de sesión
-│   │   └── catalog_api.py      # /catalog/..., ownerAccountId y name
-│   ├── health/views.py         # /health/live, /health/ready
-│   ├── http.py                 # request_json + body/content_type
-│   └── json_types.py           # JsonBody (dict | list)
-├── identity/
-│   ├── navigation/google_login_redirect.py  # return_to relativo seguro
-│   └── api/views/google_login_redirect.py   # lee return_to
-└── catalog/
-    ├── api/
-    │   ├── gateways.py         # factories desde settings
-    │   ├── panel_session.py    # PanelSessionGuardMixin + _forward
-    │   ├── urls.py
-    │   └── views/              # PanelCatalogProductViewSet · PanelCatalogPublishView
-    ├── use_cases/              # una función por operación
-    ├── ports/                  # PanelSessionGateway, CatalogGateway
-    ├── dtos/                   # PanelSession, CatalogResponse
-    ├── domain/                 # constantes y domain/errors/
-    └── infrastructure/         # AccountSessionClient, CatalogApiClient
+|-- common/
+|   |-- contracts/               account_api.py, catalog_api.py
+|   |-- dtos/                    AccountSession, AccountLogout, ServiceResponse
+|   |-- errors/                  AccountApiUnavailable, CatalogApiUnavailable
+|   |-- ports/                   AccountApiGateway, CatalogApiGateway
+|   |-- infrastructure/clients/ AccountApiClient, CatalogApiClient
+|   |-- http.py
+|   |-- json_types.py
+|   `-- health/
+|-- identity/
+|   |-- api/
+|   |-- navigation/
+|   |-- use_cases/
+|   `-- dtos/                    LogoutPanelSessionResult
+`-- catalog/
+    |-- api/                     composition, guard, views y URLs
+    `-- use_cases/
 ```
 
-Variables de entorno relevantes:
-
-| Variable | Uso |
-|---|---|
-| `ACCOUNT_API_BASE_URL` | Resolver `fes_session` (`GET /accounts/session`) |
-| `CATALOG_API_BASE_URL` | Reenviar las operaciones a `catalog-api` |
-| `CATALOG_API_TIMEOUT_SECONDS` | Timeout del cliente de catálogo |
-| `PANEL_PUBLIC_ORIGIN` | Origen CORS con credenciales y base del `return_to` |
-| `ACCOUNTS_PUBLIC_BASE_URL` | Base pública de cuentas para el redirect de login |
-
-## 2. Diagrama de componentes
+## 2. Componentes y dependencias
 
 ```mermaid
 flowchart TB
-  subgraph browser [Navegador / panel-web]
-    UI["Cliente SPA<br/>cookie fes_session"]
-  end
+  UI["panel-web<br/>cookie fes_session"]
 
-  subgraph panelApi [panel-api]
-    subgraph configLayer [config]
-      Urls[config.urls]
-      Settings[config.settings]
+  subgraph Panel[panel-api]
+    subgraph Identity[identity]
+      IdentityApi["api<br/>session, logout, login redirect"]
+      IdentityUC["use_cases<br/>resolve session, logout"]
+      IdentityDTO["LogoutPanelSessionResult"]
+      Navigation["navigation<br/>return_to seguro"]
     end
 
-    subgraph commonLayer [common]
-      Contracts["common.contracts<br/>account_api · catalog_api"]
-      HttpHelper["common.http<br/>request_json(body, content_type)"]
-      Health["common.health<br/>live · ready"]
+    subgraph Catalog[catalog]
+      CatalogViews["api.views<br/>products, publish"]
+      Guard["api.panel_session<br/>PanelSessionGuardMixin"]
+      CatalogUC["use_cases<br/>resolve owner + operaciones"]
     end
 
-    subgraph identityApp [identity]
-      LoginView["api.views<br/>GoogleLoginRedirectView"]
-      LoginNav["navigation<br/>build_google_login_redirect_url<br/>_safe_path"]
-    end
-
-    subgraph catalogApp [catalog]
-      Views["api.views<br/>PanelCatalogProductViewSet<br/>PanelCatalogPublishView"]
-      Guard["api.panel_session<br/>PanelSessionGuardMixin<br/>initial · handle_exception · _forward"]
-      Factories["api.gateways<br/>build_session_gateway · build_catalog_gateway"]
-      UseCases["use_cases<br/>resolve_panel_owner + operaciones"]
-      Ports["ports<br/>PanelSessionGateway · CatalogGateway"]
-      SessionClient["infrastructure<br/>AccountSessionClient"]
-      CatalogClient["infrastructure<br/>CatalogApiClient"]
-      Domain["domain<br/>SESSION_COOKIE_NAME · errores"]
+    subgraph Common[common]
+      Contracts["contracts<br/>account_api, catalog_api<br/>unica SESSION_COOKIE_NAME"]
+      Ports["ports<br/>AccountApiGateway<br/>CatalogApiGateway"]
+      DTOs["dtos<br/>AccountSession<br/>AccountLogout<br/>ServiceResponse"]
+      Errors["errors<br/>AccountApiUnavailable<br/>CatalogApiUnavailable"]
+      AccountClient["infrastructure.clients<br/>AccountApiClient"]
+      CatalogClient["infrastructure.clients<br/>CatalogApiClient"]
+      Factory["infrastructure.client_factory<br/>build_account_api_gateway<br/>build_catalog_api_gateway"]
+      Http["http<br/>request_json"]
+      Health["health<br/>live, ready"]
     end
   end
 
-  subgraph accounts [account-api]
-    SessionEndpoint["GET /accounts/session"]
-    GoogleEndpoint["GET /accounts/login/google"]
-  end
+  Accounts[account-api]
+  CatalogService[catalog-api]
 
-  subgraph catalog [catalog-api]
-    Products["/catalog/products<br/>/catalog/products/{id}"]
-    PublishProduct["/catalog/products/{id}/publish|unpublish"]
-    PublishAll["POST /catalog/publish"]
-  end
+  UI --> IdentityApi
+  UI --> CatalogViews
+  UI --> Health
+  IdentityApi --> IdentityUC
+  IdentityApi --> Navigation
+  IdentityUC --> Ports
+  IdentityUC --> DTOs
+  IdentityUC --> Errors
+  IdentityUC --> IdentityDTO
+  IdentityApi --> Factory
 
-  UI -->|"/panel/catalog/..."| Views
-  UI -->|"/panel/identity/login/google?return_to=..."| LoginView
-  UI -->|health| Health
-  Urls --> Views
-  Urls --> LoginView
-  Urls --> Health
+  CatalogViews --> Guard
+  CatalogViews --> CatalogUC
+  Guard --> CatalogUC
+  Guard --> Ports
+  Guard --> DTOs
+  Guard --> Errors
+  Guard --> Contracts
+  Guard --> Factory
+  Factory --> AccountClient
+  Factory --> CatalogClient
+  Factory --> Ports
+  CatalogUC --> Ports
+  CatalogUC --> DTOs
 
-  Views --> Guard
-  Guard --> UseCases
-  Views --> UseCases
-  UseCases --> Ports
-  Guard --> Factories
-  Factories --> SessionClient
-  Factories --> CatalogClient
-  SessionClient -.implementa.-> Ports
-  CatalogClient -.implementa.-> Ports
-  SessionClient --> HttpHelper
-  CatalogClient --> HttpHelper
-  SessionClient --> Contracts
+  AccountClient -. implementa .-> Ports
+  CatalogClient -. implementa .-> Ports
+  AccountClient --> Contracts
+  AccountClient --> DTOs
+  AccountClient --> Errors
+  AccountClient --> Http
   CatalogClient --> Contracts
-  CatalogClient --> Domain
-  SessionClient --> Domain
-  LoginView --> LoginNav
-  LoginView --> Contracts
-  Settings --> Factories
-
-  SessionClient -->|ACCOUNT_API_BASE_URL + cookie| SessionEndpoint
-  LoginNav -->|ACCOUNT_LOGIN_GOOGLE_PATH + return_to| GoogleEndpoint
-  CatalogClient -->|"CATALOG_API_BASE_URL + ownerAccountId[ + name]"| Products
-  CatalogClient -->|ownerAccountId| PublishProduct
-  CatalogClient -->|"ownerAccountId + body"| PublishAll
+  CatalogClient --> DTOs
+  CatalogClient --> Errors
+  CatalogClient --> Http
+  AccountClient --> Accounts
+  CatalogClient --> CatalogService
 ```
 
-## 3. Diagrama de clases (catalog)
-
-Se muestran relaciones arquitectónicas relevantes; no se reproduce cada import.
-Los DTOs y errores se citan cuando son contratos de frontera.
+## 3. Clases y contratos comunes
 
 ```mermaid
 classDiagram
   direction TB
 
-  class PanelCatalogProductViewSet {
-    +list(request) Response
-    +create(request) Response
-    +update(request, product_id) Response
-    +destroy(request, product_id) Response
-    +publish(request, product_id) Response
-    +unpublish(request, product_id) Response
-  }
-  class PanelCatalogPublishView {
-    +post(request) Response
-  }
-  class PanelSessionGuardMixin {
-    +owner_account_id: str
-    +_session_gateway() AccountSessionClient
-    +_catalog_gateway() CatalogApiClient
-    +initial(request, ...) None
-    +handle_exception(exc) Response
-    +_forward(operation) Response
-  }
-
-  class resolve_panel_owner {
-    <<function>>
-    +resolve_panel_owner(gateway, fes_session) PanelSession
-  }
-  class list_products {
-    <<function>>
-    +list_products(gateway, owner, name=None) CatalogResponse
-  }
-  class create_product {
-    <<function>>
-    +create_product(gateway, owner, body, content_type) CatalogResponse
-  }
-  class update_product {
-    <<function>>
-    +update_product(gateway, owner, product_id, body, content_type) CatalogResponse
-  }
-  class delete_product {
-    <<function>>
-    +delete_product(gateway, owner, product_id) CatalogResponse
-  }
-  class publish_product {
-    <<function>>
-    +publish_product(gateway, owner, product_id) CatalogResponse
-  }
-  class unpublish_product {
-    <<function>>
-    +unpublish_product(gateway, owner, product_id) CatalogResponse
-  }
-  class publish_catalog {
-    <<function>>
-    +publish_catalog(gateway, owner, body, content_type) CatalogResponse
-  }
-
-  class PanelSessionGateway {
+  class AccountApiGateway {
     <<Protocol>>
-    +resolve(fes_session) PanelSession
+    +get_session(fes_session) AccountSession
+    +logout(fes_session) AccountLogout
   }
-  class CatalogGateway {
+  class CatalogApiGateway {
     <<Protocol>>
-    +list_products(owner, name=None) CatalogResponse
-    +create_product(owner, body, content_type) CatalogResponse
-    +update_product(owner, product_id, body, content_type) CatalogResponse
-    +delete_product(owner, product_id) CatalogResponse
-    +publish_product(owner, product_id) CatalogResponse
-    +unpublish_product(owner, product_id) CatalogResponse
-    +publish_catalog(owner, body, content_type) CatalogResponse
+    +list_products(owner, name) ServiceResponse
+    +create_product(owner, body, content_type) ServiceResponse
+    +update_product(owner, id, body, content_type) ServiceResponse
+    +delete_product(owner, id) ServiceResponse
+    +publish_product(owner, id) ServiceResponse
+    +unpublish_product(owner, id) ServiceResponse
+    +publish_catalog(owner, body, content_type) ServiceResponse
   }
-
-  class AccountSessionClient {
-    -_base_url: str
-    -_timeout_seconds: float
-    +resolve(fes_session) PanelSession
+  class AccountApiClient {
+    +get_session(fes_session) AccountSession
+    +logout(fes_session) AccountLogout
   }
   class CatalogApiClient {
-    -_base_url: str
-    -_timeout_seconds: float
-    +list_products(owner, name=None) CatalogResponse
-    +create_product(owner, body, content_type) CatalogResponse
-    +update_product(owner, product_id, body, content_type) CatalogResponse
-    +delete_product(owner, product_id) CatalogResponse
-    +publish_product(owner, product_id) CatalogResponse
-    +unpublish_product(owner, product_id) CatalogResponse
-    +publish_catalog(owner, body, content_type) CatalogResponse
-    -_with_query(path, owner, name) str
+    +list_products(owner, name) ServiceResponse
+    +create_product(owner, body, content_type) ServiceResponse
+    +update_product(owner, id, body, content_type) ServiceResponse
+    +delete_product(owner, id) ServiceResponse
+    +publish_product(owner, id) ServiceResponse
+    +unpublish_product(owner, id) ServiceResponse
+    +publish_catalog(owner, body, content_type) ServiceResponse
   }
-
-  class PanelSession {
+  class AccountSession {
+    +status_code: int
+    +body: dict
     +authenticated: bool
-    +account_id: str
+    +account_id: str?
   }
-  class CatalogResponse {
+  class AccountLogout {
+    +status_code: int
+    +body: dict
+    +had_active_session: bool
+  }
+  class ServiceResponse {
     +status_code: int
     +body: JsonBody
   }
-  class SessionServiceUnavailable
-  class CatalogServiceUnavailable
-  class SESSION_COOKIE_NAME {
-    <<constant>>
-    fes_session
+  class AccountApiUnavailable
+  class CatalogApiUnavailable
+  class LogoutPanelSessionResult {
+    +status_code: int
+    +body: dict
+    +clear_cookie: bool
   }
+  class PanelSessionGuardMixin
 
-  PanelCatalogProductViewSet --> PanelSessionGuardMixin
-  PanelCatalogPublishView --> PanelSessionGuardMixin
-  PanelSessionGuardMixin --> resolve_panel_owner
-  PanelSessionGuardMixin --> AccountSessionClient : _session_gateway()
-  PanelSessionGuardMixin --> CatalogApiClient : _catalog_gateway()
-  PanelSessionGuardMixin --> SESSION_COOKIE_NAME
-  PanelCatalogProductViewSet --> list_products
-  PanelCatalogProductViewSet --> create_product
-  PanelCatalogProductViewSet --> update_product
-  PanelCatalogProductViewSet --> delete_product
-  PanelCatalogProductViewSet --> publish_product
-  PanelCatalogProductViewSet --> unpublish_product
-  PanelCatalogPublishView --> publish_catalog
-
-  resolve_panel_owner --> PanelSessionGateway
-  resolve_panel_owner --> SessionServiceUnavailable
-  list_products --> CatalogGateway
-  create_product --> CatalogGateway
-  update_product --> CatalogGateway
-  delete_product --> CatalogGateway
-  publish_product --> CatalogGateway
-  unpublish_product --> CatalogGateway
-  publish_catalog --> CatalogGateway
-
-  AccountSessionClient ..|> PanelSessionGateway
-  CatalogApiClient ..|> CatalogGateway
-  AccountSessionClient --> SessionServiceUnavailable
-  CatalogApiClient --> CatalogServiceUnavailable
-  AccountSessionClient ..> PanelSession
-  CatalogApiClient ..> CatalogResponse
+  AccountApiClient ..|> AccountApiGateway
+  CatalogApiClient ..|> CatalogApiGateway
+  AccountApiClient --> AccountSession
+  AccountApiClient --> AccountLogout
+  AccountApiClient --> AccountApiUnavailable
+  CatalogApiClient --> ServiceResponse
+  CatalogApiClient --> CatalogApiUnavailable
+  PanelSessionGuardMixin --> AccountApiGateway
+  PanelSessionGuardMixin --> CatalogApiGateway
+  PanelSessionGuardMixin --> AccountApiUnavailable
+  PanelSessionGuardMixin --> CatalogApiUnavailable
+  LogoutPanelSessionResult ..> AccountLogout : adapta
 ```
 
-## 4. Secuencia — listar productos con filtro
-
-Flujo principal: resolver la sesión, fijar el dueño y reenviar; el `name`
-opcional viaja como query param y el filtrado lo hace `catalog-api`. Cubre el 401
-sin sesión y el 503 si cuentas cae.
+## 4. Secuencia identity: consultar sesion
 
 ```mermaid
 sequenceDiagram
-  actor Browser as Navegador / panel-web
-  participant View as PanelCatalogProductViewSet.list
-  participant Guard as PanelSessionGuardMixin
-  participant Session as resolve_panel_owner
-  participant SessionClient as AccountSessionClient
+  actor Browser as panel-web
+  participant View as identity.api PanelSessionViewSet
+  participant UC as resolve_panel_session
+  participant Port as common AccountApiGateway
+  participant Client as common AccountApiClient
   participant Accounts as account-api
-  participant UC as list_products
-  participant CatalogClient as CatalogApiClient
+
+  Browser->>View: GET /panel/identity/session + Cookie
+  View->>UC: resolve_panel_session(port, fes_session)
+  UC->>Port: get_session(fes_session)
+  Port->>Client: implementacion compuesta
+  Client->>Accounts: GET /accounts/session + Cookie fes_session
+  alt respuesta 2xx o 4xx utilizable
+    Accounts-->>Client: status + body
+    Client-->>UC: AccountSession(status, body, authenticated, id)
+    UC-->>View: AccountSession
+    View-->>Browser: mismo status + body
+  else red, 5xx o respuesta invalida
+    Client-->>View: AccountApiUnavailable
+    View-->>Browser: 503 servicio_no_disponible
+  end
+```
+
+Logout usa el mismo cliente y puerto: `AccountApiClient.logout` devuelve
+`AccountLogout`; el caso de uso lo adapta a `LogoutPanelSessionResult` para que
+la API decida limpiar la cookie del panel.
+
+## 5. Secuencia catalog: listar con filtro
+
+```mermaid
+sequenceDiagram
+  actor Browser as panel-web
+  participant View as catalog.api product view
+  participant Guard as PanelSessionGuardMixin
+  participant SessionUC as resolve_panel_owner
+  participant AccountPort as common AccountApiGateway
+  participant AccountClient as common AccountApiClient
+  participant Accounts as account-api
+  participant ProductUC as list_products
+  participant CatalogPort as common CatalogApiGateway
+  participant CatalogClient as common CatalogApiClient
   participant Catalog as catalog-api
 
-  Browser->>View: GET /panel/catalog/products?name=mat<br/>Cookie fes_session
+  Browser->>View: GET /panel/catalog/products?name=mat + Cookie
   View->>Guard: initial(request)
-  Guard->>Session: resolve_panel_owner(gateway, fes_session)
-  Session->>SessionClient: resolve(fes_session)
-  SessionClient->>Accounts: GET /accounts/session (Cookie)
-  alt cuentas no disponible / 5xx
-    Accounts-->>SessionClient: error de red / 5xx
-    SessionClient-->>Guard: SessionServiceUnavailable
-    Guard-->>Browser: 503 {"error":"servicio_no_disponible","message":"..."}
-  else sesión resuelta
-    Accounts-->>SessionClient: 200 {"authenticated", "id", ...}
-    SessionClient-->>Guard: PanelSession
-    alt no authenticated
-      Guard-->>Browser: 401 {"error":"no_autenticado","message":"..."}
-    else authenticated
-      Guard->>View: self.owner_account_id = account_id
-      View->>UC: list_products(gateway, owner, "mat")
-      UC->>CatalogClient: list_products(owner, "mat")
-      CatalogClient->>Catalog: GET /catalog/products?ownerAccountId={sesión}&name=mat
-      alt catalog-api 2xx o 4xx
-        Catalog-->>CatalogClient: status + body
-        CatalogClient-->>View: CatalogResponse
-        View-->>Browser: mismo status + mismo body
-      else catalog-api 5xx / inalcanzable
-        Catalog-->>CatalogClient: error de red / 5xx
-        CatalogClient-->>Guard: CatalogServiceUnavailable
-        Guard-->>Browser: 503 {"error":"servicio_no_disponible","message":"..."}
-      end
+  Guard->>SessionUC: resolve_panel_owner(account port, cookie)
+  SessionUC->>AccountPort: get_session(cookie)
+  AccountPort->>AccountClient: implementacion compuesta
+  AccountClient->>Accounts: GET /accounts/session + Cookie
+  alt cuentas no disponible
+    AccountClient-->>Guard: AccountApiUnavailable
+    Guard-->>Browser: 503 servicio_no_disponible
+  else sesion no autenticada o sin id
+    Accounts-->>Guard: AccountSession no valida
+    Guard-->>Browser: 401 no_autenticado
+  else sesion valida
+    Accounts-->>Guard: AccountSession(account_id)
+    Guard->>View: owner_account_id = account_id
+    View->>ProductUC: list_products(catalog port, owner, "mat")
+    ProductUC->>CatalogPort: list_products(owner, "mat")
+    CatalogPort->>CatalogClient: implementacion compuesta
+    CatalogClient->>Catalog: GET /catalog/products?ownerAccountId={owner}&name=mat
+    alt catalogo 2xx o 4xx
+      Catalog-->>CatalogClient: status + body
+      CatalogClient-->>View: ServiceResponse
+      View-->>Browser: mismo status + body
+    else catalogo no disponible o 5xx
+      CatalogClient-->>Guard: CatalogApiUnavailable
+      Guard-->>Browser: 503 servicio_no_disponible
     end
   end
 ```
 
-Notas de contrato:
-
-- `name` se añade a la query solo cuando viene con valor; el panel no filtra ni
-  normaliza. **(RF-23)**
-- `ownerAccountId` viaja como **query param autoritativo** en todas las llamadas
-  internas; el valor que envíe el cliente en el cuerpo se ignora. **(RF-4, RF-17)**
-
-## 5. Secuencia — crear/actualizar producto multipart
-
-El punto delicado es preservar el `Content-Type` completo (con `boundary`); usar
-`request.content_type` lo perdía y `catalog-api` devolvía 415.
+## 6. Secuencia catalog: multipart y publish
 
 ```mermaid
 sequenceDiagram
-  actor Browser as Navegador / panel-web
-  participant View as PanelCatalogProductViewSet.create/update
-  participant Guard as PanelSessionGuardMixin
-  participant UC as create_product / update_product
-  participant CatalogClient as CatalogApiClient
+  actor Browser as panel-web
+  participant View as catalog.api view
+  participant UC as catalog use case
+  participant Port as common CatalogApiGateway
+  participant Client as common CatalogApiClient
   participant Catalog as catalog-api
 
-  Browser->>View: POST/PUT /panel/catalog/products[/{id}]<br/>Cookie fes_session<br/>Content-Type: multipart/form-data; boundary=xyz<br/>body binario
-  View->>Guard: initial(request)
-  Note over Guard: 401 sin sesión; 503 si cuentas falla<br/>(mismo flujo de la sección 4)
-  Guard-->>View: self.owner_account_id = account_id
-  View->>UC: create_product(gateway, owner, request.body, request.META["CONTENT_TYPE"])
-  UC->>CatalogClient: create_product(owner, body, "multipart/form-data; boundary=xyz")
-  CatalogClient->>Catalog: POST /catalog/products?ownerAccountId={sesión}<br/>body tal cual<br/>Content-Type: multipart/form-data; boundary=xyz
-  alt catalog-api 2xx o 4xx
-    Catalog-->>CatalogClient: status + body
-    CatalogClient-->>View: CatalogResponse
-    View-->>Browser: mismo status + mismo body
-  else catalog-api 5xx / inalcanzable
-    Catalog-->>CatalogClient: error de red / 5xx
-    CatalogClient-->>Guard: CatalogServiceUnavailable
-    Guard-->>Browser: 503 {"error":"servicio_no_disponible","message":"..."}
+  alt crear o actualizar producto
+    Browser->>View: POST/PUT + multipart body + Content-Type con boundary
+    Note over View: el guard ya fijo owner_account_id
+    View->>UC: owner, request.body, META[CONTENT_TYPE]
+    UC->>Port: create/update(owner, body, content_type)
+    Port->>Client: implementacion compuesta
+    Client->>Catalog: ownerAccountId query + body intacto + Content-Type intacto
+  else publicar catalogo sin body
+    Browser->>View: POST /panel/catalog/publish sin body
+    View->>View: body = b"{}"; content_type = application/json
+    View->>UC: publish_catalog(owner, body, content_type)
+    UC->>Port: publish_catalog(owner, body, content_type)
+    Port->>Client: implementacion compuesta
+    Client->>Catalog: POST /catalog/publish?ownerAccountId={owner} + {}
   end
+  Catalog-->>Client: status + body
+  Client-->>View: ServiceResponse
+  View-->>Browser: status + body
 ```
 
-Notas de contrato:
+## 7. Restricciones verificadas
 
-- Se usa `request.META["CONTENT_TYPE"]` (no `request.content_type`) para
-  conservar el `boundary`; sin él, `catalog-api` no puede parsear el multipart y
-  responde 415. **(RF-24)**
-- `common.http` propaga `body`/`content_type` sin interpretarlos. **(RF-18, RF-24)**
-
-## 6. Secuencia — publicar catálogo
-
-```mermaid
-sequenceDiagram
-  actor Browser as Navegador / panel-web
-  participant View as PanelCatalogPublishView
-  participant Guard as PanelSessionGuardMixin
-  participant UC as publish_catalog
-  participant CatalogClient as CatalogApiClient
-  participant Catalog as catalog-api
-
-  Browser->>View: POST /panel/catalog/publish<br/>Cookie fes_session; body: productos sin dueño visibles<br/>(o sin body, Content-Type text/plain desde Angular)
-  View->>Guard: initial(request)
-  Note over Guard: 401 sin sesión; 503 si cuentas falla<br/>(mismo flujo de la sección 4)
-  Guard-->>View: self.owner_account_id = account_id
-  View->>View: body = request.body or b"{}"; content_type = "application/json"
-  View->>UC: publish_catalog(gateway, owner, body, "application/json")
-  UC->>CatalogClient: publish_catalog(owner, body, "application/json")
-  CatalogClient->>Catalog: POST /catalog/publish?ownerAccountId={sesión}<br/>body JSON ({} si no vino cuerpo)<br/>Content-Type: application/json
-  alt hay productos (sin dueño + draft del dueño)
-    Catalog-->>CatalogClient: 200 {"published": n}
-    CatalogClient-->>View: CatalogResponse
-    View-->>Browser: 200 con n publicados
-  else no hay productos por publicar
-    Catalog-->>CatalogClient: 200 {"published": 0}
-    CatalogClient-->>View: CatalogResponse
-    View-->>Browser: 200 con 0 publicados (no es error)
-  end
-```
-
-Notas de contrato:
-
-- Si no viene cuerpo, se reenvía `{}` como `application/json`; así el
-  `text/plain` del cliente Angular no provoca un 415. **(RF-25)**
-- Publicar sin productos responde 200 con 0 publicados; lo decide
-  `catalog-api`. **(RF-21)**
-
-## 7. Secuencia — retorno de login
-
-```mermaid
-sequenceDiagram
-  actor Browser as Navegador / panel-web
-  participant View as GoogleLoginRedirectView
-  participant Nav as build_google_login_redirect_url
-  participant Accounts as account-api
-
-  Browser->>View: GET /panel/identity/login/google?return_to=/productos
-  View->>Nav: build(url, PANEL_PUBLIC_ORIGIN, "/productos")
-  Nav->>Nav: _safe_path("/productos") -> "/productos"
-  Nav-->>View: ACCOUNTS_PUBLIC_BASE_URL/accounts/login/google?return_to=ORIGEN/productos
-  View-->>Browser: 302 al endpoint de cuentas
-  Browser->>Accounts: GET /accounts/login/google?return_to=ORIGEN/productos
-  Note over Accounts: account-api valida el return_to por origen
-```
-
-Nota: si `return_to` falta, no empieza con `/` o empieza con `//`, `_safe_path`
-devuelve cadena vacía y el `return_to` queda reducido a `PANEL_PUBLIC_ORIGIN`.
-La validación por origen vive en `account-api`. **(RF-26, RF-27)**
-
-## 8. Traducción de errores
-
-| Origen | Estado y cuerpo de la frontera | RF |
-|---|---|---|
-| Sin cookie / sesión no autenticada | `401` `{"error":"no_autenticado","message":"..."}` | RF-3 |
-| `account-api` inalcanzable o 5xx | `503` `{"error":"servicio_no_disponible","message":"..."}` sin reenvío | RF-14 |
-| `catalog-api` 4xx | mismo estado y cuerpo de `catalog-api` | RF-22 |
-| `catalog-api` 5xx o inalcanzable | `503` `{"error":"servicio_no_disponible","message":"..."}` | RF-15 |
-| Sin productos en `publish` | `200` con 0 publicados | RF-21 |
-| Multipart sin `boundary` (regresión) | evitado con `request.META["CONTENT_TYPE"]` | RF-24 |
-| `publish` sin cuerpo / `text/plain` (regresión) | evitado enviando `{}` como `application/json` | RF-25 |
+- `SESSION_COOKIE_NAME` vive unicamente en `common/contracts/account_api.py`.
+- Ambos modulos usan fakes de `common.ports` en sus tests.
+- Los tests de clientes viven en `tests/common`.
+- La composicion concreta queda en las APIs; los casos de uso dependen de
+  Protocols comunes.
+- El contrato HTTP, health, CORS y ausencia de persistencia no cambiaron.
+- `make verify`: verde, 112 tests, sin migraciones.

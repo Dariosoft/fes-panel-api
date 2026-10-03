@@ -1,10 +1,10 @@
-from catalog.dtos import CatalogResponse
-from catalog.ports import CatalogGateway
+from common.dtos import ServiceResponse
+from common.ports import CatalogApiGateway
 
 
 def list_products(
-    catalog_gateway: CatalogGateway,
+    catalog_gateway: CatalogApiGateway,
     owner_account_id: str,
     name: str | None = None,
-) -> CatalogResponse:
+) -> ServiceResponse:
     return catalog_gateway.list_products(owner_account_id, name)

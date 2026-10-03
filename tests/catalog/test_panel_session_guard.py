@@ -6,8 +6,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from catalog.api.panel_session import PanelSessionGuardMixin
-from catalog.domain import SESSION_COOKIE_NAME, SessionServiceUnavailable
-from catalog.dtos import PanelSession
+from common.contracts.account_api import SESSION_COOKIE_NAME
+from common.dtos import AccountSession
+from common.errors import AccountApiUnavailable
 
 
 class _ProbeView(PanelSessionGuardMixin, APIView):
@@ -19,12 +20,12 @@ class _ProbeView(PanelSessionGuardMixin, APIView):
 
 
 class _SessionGateway:
-    def __init__(self, session: PanelSession | None = None, error: Exception | None = None):
+    def __init__(self, session: AccountSession | None = None, error: Exception | None = None):
         self._session = session
         self._error = error
         self.last_cookie = None
 
-    def resolve(self, fes_session: str | None) -> PanelSession:
+    def get_session(self, fes_session: str | None) -> AccountSession:
         self.last_cookie = fes_session
         if self._error:
             raise self._error
@@ -42,7 +43,7 @@ class PanelSessionGuardTests(SimpleTestCase):
             return self.view(self.factory.get("/probe", **headers))
 
     def test_missing_cookie_is_unauthorized(self):
-        gateway = _SessionGateway(PanelSession(authenticated=False, account_id=None))
+        gateway = _SessionGateway(AccountSession(200, {}, False, None))
 
         response = self._call(gateway)
 
@@ -51,7 +52,7 @@ class PanelSessionGuardTests(SimpleTestCase):
         self.assertIn("message", response.data)
 
     def test_anonymous_session_is_unauthorized(self):
-        gateway = _SessionGateway(PanelSession(authenticated=False, account_id=None))
+        gateway = _SessionGateway(AccountSession(200, {}, False, None))
 
         response = self._call(gateway, cookie="tok")
 
@@ -60,7 +61,7 @@ class PanelSessionGuardTests(SimpleTestCase):
         self.assertEqual(gateway.last_cookie, "tok")
 
     def test_accounts_failure_is_unavailable(self):
-        gateway = _SessionGateway(error=SessionServiceUnavailable())
+        gateway = _SessionGateway(error=AccountApiUnavailable())
 
         response = self._call(gateway, cookie="tok")
 
@@ -68,7 +69,7 @@ class PanelSessionGuardTests(SimpleTestCase):
         self.assertEqual(response.data["error"], "servicio_no_disponible")
 
     def test_valid_session_continues_and_keeps_owner(self):
-        gateway = _SessionGateway(PanelSession(authenticated=True, account_id="acc-1"))
+        gateway = _SessionGateway(AccountSession(200, {}, True, "acc-1"))
 
         response = self._call(gateway, cookie="tok")
 

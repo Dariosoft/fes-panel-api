@@ -3,12 +3,9 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 from rest_framework.test import APIClient
 
-from catalog.domain import (
-    SESSION_COOKIE_NAME,
-    CatalogServiceUnavailable,
-    SessionServiceUnavailable,
-)
-from catalog.dtos import CatalogResponse, PanelSession
+from common.contracts.account_api import SESSION_COOKIE_NAME
+from common.dtos import AccountSession, ServiceResponse
+from common.errors import AccountApiUnavailable, CatalogApiUnavailable
 
 
 class _SessionGateway:
@@ -16,17 +13,17 @@ class _SessionGateway:
         self._authenticated = authenticated
         self._error = error
 
-    def resolve(self, fes_session: str | None) -> PanelSession:
+    def get_session(self, fes_session: str | None) -> AccountSession:
         if self._error:
             raise self._error
         if not self._authenticated:
-            return PanelSession(authenticated=False, account_id=None)
-        return PanelSession(authenticated=True, account_id="acc-session")
+            return AccountSession(200, {}, False, None)
+        return AccountSession(200, {}, True, "acc-session")
 
 
 class _CatalogGateway:
     def __init__(self, response=None, error=None):
-        self._response = response or CatalogResponse(status_code=200, body={"ok": True})
+        self._response = response or ServiceResponse(status_code=200, body={"ok": True})
         self._error = error
         self.calls: list[tuple] = []
 
@@ -65,8 +62,8 @@ class PanelCatalogSessionErrorTests(SimpleTestCase):
     def _patch(self, session, catalog):
         return patch.multiple(
             "catalog.api.panel_session",
-            build_session_gateway=lambda: session,
-            build_catalog_gateway=lambda: catalog,
+            build_account_api_gateway=lambda: session,
+            build_catalog_api_gateway=lambda: catalog,
         )
 
     def test_missing_cookie_is_401_without_forwarding(self):
@@ -93,7 +90,7 @@ class PanelCatalogSessionErrorTests(SimpleTestCase):
         self.assertEqual(catalog.calls, [])
 
     def test_accounts_failure_is_503_without_forwarding(self):
-        session = _SessionGateway(error=SessionServiceUnavailable())
+        session = _SessionGateway(error=AccountApiUnavailable())
         catalog = _CatalogGateway()
         self.client.cookies[SESSION_COOKIE_NAME] = "tok"
 
@@ -107,7 +104,7 @@ class PanelCatalogSessionErrorTests(SimpleTestCase):
     def test_catalog_client_error_is_proxied(self):
         session = _SessionGateway()
         catalog = _CatalogGateway(
-            response=CatalogResponse(status_code=404, body={"error": "no_encontrado"})
+            response=ServiceResponse(status_code=404, body={"error": "no_encontrado"})
         )
         self.client.cookies[SESSION_COOKIE_NAME] = "tok"
 
@@ -119,7 +116,7 @@ class PanelCatalogSessionErrorTests(SimpleTestCase):
 
     def test_catalog_server_error_is_503(self):
         session = _SessionGateway()
-        catalog = _CatalogGateway(error=CatalogServiceUnavailable())
+        catalog = _CatalogGateway(error=CatalogApiUnavailable())
         self.client.cookies[SESSION_COOKIE_NAME] = "tok"
 
         with self._patch(session, catalog):
@@ -130,7 +127,7 @@ class PanelCatalogSessionErrorTests(SimpleTestCase):
 
     def test_client_owner_is_ignored_and_session_owner_used(self):
         session = _SessionGateway()
-        catalog = _CatalogGateway(response=CatalogResponse(status_code=200, body={"id": "p1"}))
+        catalog = _CatalogGateway(response=ServiceResponse(status_code=200, body={"id": "p1"}))
         self.client.cookies[SESSION_COOKIE_NAME] = "tok"
 
         with self._patch(session, catalog):

@@ -5,18 +5,18 @@ from django.apps import apps
 from django.test import SimpleTestCase, override_settings
 from rest_framework.test import APIClient
 
-from catalog.domain import SESSION_COOKIE_NAME
-from catalog.dtos import CatalogResponse, PanelSession
+from common.contracts.account_api import SESSION_COOKIE_NAME
+from common.dtos import AccountSession, ServiceResponse
 
 
 class _SessionGateway:
-    def resolve(self, fes_session: str | None) -> PanelSession:
-        return PanelSession(authenticated=True, account_id="acc-session")
+    def get_session(self, fes_session: str | None) -> AccountSession:
+        return AccountSession(200, {}, True, "acc-session")
 
 
 class _CatalogGateway:
-    def __init__(self, response: CatalogResponse | None = None):
-        self._response = response or CatalogResponse(status_code=200, body={"ok": True})
+    def __init__(self, response: ServiceResponse | None = None):
+        self._response = response or ServiceResponse(status_code=200, body={"ok": True})
         self.calls: list[tuple] = []
 
     def _record(self, name, *args):
@@ -53,8 +53,8 @@ class PanelCatalogOperationTests(SimpleTestCase):
     def _run(self, method, path, catalog, **kwargs):
         with patch.multiple(
             "catalog.api.panel_session",
-            build_session_gateway=lambda: _SessionGateway(),
-            build_catalog_gateway=lambda: catalog,
+            build_account_api_gateway=lambda: _SessionGateway(),
+            build_catalog_api_gateway=lambda: catalog,
         ):
             return getattr(self.client, method)(path, **kwargs)
 
@@ -107,7 +107,7 @@ class PanelCatalogOperationTests(SimpleTestCase):
         self.assertEqual(catalog.calls, [("unpublish_product", "acc-session", "p1")])
 
     def test_publish_catalog_forwards_owner_and_body(self):
-        catalog = _CatalogGateway(response=CatalogResponse(status_code=200, body={"published": 2}))
+        catalog = _CatalogGateway(response=ServiceResponse(status_code=200, body={"published": 2}))
         response = self._run(
             "post",
             "/panel/catalog/publish",
@@ -122,7 +122,7 @@ class PanelCatalogOperationTests(SimpleTestCase):
         self.assertEqual(response.json(), {"published": 2})
 
     def test_publish_catalog_without_products_is_200_with_zero(self):
-        catalog = _CatalogGateway(response=CatalogResponse(status_code=200, body={"published": 0}))
+        catalog = _CatalogGateway(response=ServiceResponse(status_code=200, body={"published": 0}))
         response = self._run(
             "post",
             "/panel/catalog/publish",

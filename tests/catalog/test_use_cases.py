@@ -1,7 +1,5 @@
 import unittest
 
-from catalog.domain import SessionServiceUnavailable
-from catalog.dtos import CatalogResponse, PanelSession
 from catalog.use_cases import (
     create_product,
     delete_product,
@@ -12,15 +10,17 @@ from catalog.use_cases import (
     unpublish_product,
     update_product,
 )
+from common.dtos import AccountSession, ServiceResponse
+from common.errors import AccountApiUnavailable
 
 
 class _SessionGateway:
-    def __init__(self, session: PanelSession | None = None, error: Exception | None = None):
+    def __init__(self, session: AccountSession | None = None, error: Exception | None = None):
         self._session = session
         self._error = error
         self.last_cookie = None
 
-    def resolve(self, fes_session: str | None) -> PanelSession:
+    def get_session(self, fes_session: str | None) -> AccountSession:
         self.last_cookie = fes_session
         if self._error:
             raise self._error
@@ -29,7 +29,7 @@ class _SessionGateway:
 
 class ResolvePanelOwnerTests(unittest.TestCase):
     def test_authenticated_session_returns_account_id(self):
-        gateway = _SessionGateway(PanelSession(authenticated=True, account_id="acc-1"))
+        gateway = _SessionGateway(AccountSession(200, {}, True, "acc-1"))
 
         session = resolve_panel_owner(gateway, "cookie-value")
 
@@ -38,7 +38,7 @@ class ResolvePanelOwnerTests(unittest.TestCase):
         self.assertEqual(gateway.last_cookie, "cookie-value")
 
     def test_anonymous_session_is_not_reinterpreted(self):
-        gateway = _SessionGateway(PanelSession(authenticated=False, account_id=None))
+        gateway = _SessionGateway(AccountSession(200, {}, False, None))
 
         session = resolve_panel_owner(gateway, None)
 
@@ -48,28 +48,28 @@ class ResolvePanelOwnerTests(unittest.TestCase):
     def test_infrastructure_failure_becomes_unavailable(self):
         gateway = _SessionGateway(error=TimeoutError("boom"))
 
-        with self.assertRaises(SessionServiceUnavailable):
+        with self.assertRaises(AccountApiUnavailable):
             resolve_panel_owner(gateway, "x")
 
     def test_existing_unavailable_error_is_propagated(self):
-        gateway = _SessionGateway(error=SessionServiceUnavailable())
+        gateway = _SessionGateway(error=AccountApiUnavailable())
 
-        with self.assertRaises(SessionServiceUnavailable):
+        with self.assertRaises(AccountApiUnavailable):
             resolve_panel_owner(gateway, "x")
 
 
 class _CatalogGateway:
-    def __init__(self, response: CatalogResponse | None = None):
-        self._response = response or CatalogResponse(status_code=200, body={})
+    def __init__(self, response: ServiceResponse | None = None):
+        self._response = response or ServiceResponse(status_code=200, body={})
         self.calls: list[tuple] = []
 
-    def list_products(self, owner_account_id: str, name: str | None = None) -> CatalogResponse:
+    def list_products(self, owner_account_id: str, name: str | None = None) -> ServiceResponse:
         self.calls.append(("list_products", owner_account_id, name))
         return self._response
 
     def create_product(
         self, owner_account_id: str, body: bytes, content_type: str | None
-    ) -> CatalogResponse:
+    ) -> ServiceResponse:
         self.calls.append(("create_product", owner_account_id, body, content_type))
         return self._response
 
@@ -79,25 +79,25 @@ class _CatalogGateway:
         product_id: str,
         body: bytes,
         content_type: str | None,
-    ) -> CatalogResponse:
+    ) -> ServiceResponse:
         self.calls.append(("update_product", owner_account_id, product_id, body, content_type))
         return self._response
 
-    def delete_product(self, owner_account_id: str, product_id: str) -> CatalogResponse:
+    def delete_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         self.calls.append(("delete_product", owner_account_id, product_id))
         return self._response
 
-    def publish_product(self, owner_account_id: str, product_id: str) -> CatalogResponse:
+    def publish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         self.calls.append(("publish_product", owner_account_id, product_id))
         return self._response
 
-    def unpublish_product(self, owner_account_id: str, product_id: str) -> CatalogResponse:
+    def unpublish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         self.calls.append(("unpublish_product", owner_account_id, product_id))
         return self._response
 
     def publish_catalog(
         self, owner_account_id: str, body: bytes, content_type: str | None
-    ) -> CatalogResponse:
+    ) -> ServiceResponse:
         self.calls.append(("publish_catalog", owner_account_id, body, content_type))
         return self._response
 
@@ -160,7 +160,7 @@ class ProductUseCasesTests(unittest.TestCase):
         )
 
     def test_publish_catalog_zero_published_is_propagated(self):
-        gateway = _CatalogGateway(response=CatalogResponse(status_code=200, body={"published": 0}))
+        gateway = _CatalogGateway(response=ServiceResponse(status_code=200, body={"published": 0}))
 
         result = publish_catalog(gateway, "acc-1", b"{}", "application/json")
 
