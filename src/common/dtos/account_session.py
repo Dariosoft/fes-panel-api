@@ -3,7 +3,8 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class LogoutResult:
+class AccountSession:
     status_code: int
     body: dict[str, Any]
-    had_active_session: bool
+    authenticated: bool
+    account_id: str | None

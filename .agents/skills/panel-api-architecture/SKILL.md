@@ -24,7 +24,14 @@ panel-api/
 │   │   ├── urls.py
 │   │   └── wsgi.py
 │   ├── common/
-│   │   └── health/
+│   │   ├── contracts/
+│   │   ├── dtos/
+│   │   ├── errors/
+│   │   ├── health/
+│   │   ├── infrastructure/
+│   │   │   ├── client_factory.py
+│   │   │   └── clients/
+│   │   └── ports/
 │   └── identity/
 │       ├── api/
 │       ├── use_cases/
@@ -128,7 +135,7 @@ src/<module>/domain/errors/<error_name>.py
 
 ### `src/<module>/infrastructure/`
 
-Put external system adapters here.
+Put adapters owned exclusively by that business capability here.
 
 - HTTP clients, repository implementations, cache adapters, message clients,
   settings readers, and telemetry adapters.
@@ -137,6 +144,10 @@ Put external system adapters here.
   configuration, and third-party SDKs.
 - Must not contain business rules that belong in `domain` or orchestration that
   belongs in `use_cases`.
+- Do not put HTTP clients for cluster microservices here. Shared clients for
+  `account-api`, `catalog-api`, and future services belong in
+  `src/common/infrastructure/clients/`, with shared ports, DTOs, and errors under
+  `src/common/`.
 
 Typical files:
 
@@ -173,8 +184,17 @@ Put cross-module health checks here.
 Only place code here when it is truly shared across modules.
 
 - Do not create generic dumping grounds such as `common/utils.py`.
-- `src/common/http.py` performs a JSON HTTP call. Each module adds its own headers and maps `RemoteServiceError` to its own error.
+- `src/common/http.py` performs the low-level JSON call; clients in
+  `common/infrastructure/clients/` add service headers and map transport failures to
+  shared service-specific errors.
 - Shared code must be stable and domain-neutral.
+- Put reusable microservice contracts, DTOs, errors, and ports under
+  `common/contracts/`, `common/dtos/`, `common/errors/`, and `common/ports/`.
+- Put concrete outbound clients only under `common/infrastructure/clients/`; modules
+  consume their common ports and never define duplicate microservice clients.
+- Build shared clients from Django settings only in
+  `common/infrastructure/client_factory.py`; modules import those factory functions
+  instead of defining local gateway builders or helpers.
 
 ## Tests Layout
 
@@ -229,6 +249,8 @@ Allowed dependency direction:
 ```text
 api -> use_cases/ports/dtos/navigation -> domain
 infrastructure -> ports/dtos/domain
+module use_cases -> common ports/dtos/errors
+common infrastructure/clients -> common ports/dtos/errors/contracts
 models -> domain only when model methods delegate to domain concepts
 config -> api/common wiring only
 ```

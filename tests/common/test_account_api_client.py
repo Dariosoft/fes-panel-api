@@ -3,8 +3,9 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from identity.domain import SESSION_COOKIE_NAME, AccountServiceUnavailable
-from identity.infrastructure.account_session_client import AccountSessionClient
+from common.contracts.account_api import SESSION_COOKIE_NAME
+from common.errors import AccountApiUnavailable
+from common.infrastructure.clients import AccountApiClient
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -34,7 +35,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
 
-class AccountSessionClientTests(unittest.TestCase):
+class AccountApiClientTests(unittest.TestCase):
     def setUp(self):
         _Handler.responses = {}
         _Handler.last_cookie = None
@@ -43,7 +44,7 @@ class AccountSessionClientTests(unittest.TestCase):
         self.port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
-        self.client = AccountSessionClient(f"http://127.0.0.1:{self.port}", timeout_seconds=2)
+        self.client = AccountApiClient(f"http://127.0.0.1:{self.port}", timeout_seconds=2)
 
     def tearDown(self):
         self.server.shutdown()
@@ -55,6 +56,8 @@ class AccountSessionClientTests(unittest.TestCase):
         result = self.client.get_session("abc")
         self.assertEqual(result.status_code, 200)
         self.assertEqual(result.body, body)
+        self.assertTrue(result.authenticated)
+        self.assertEqual(result.account_id, "1")
         self.assertEqual(_Handler.last_path, "/accounts/session")
         self.assertEqual(_Handler.last_cookie, f"{SESSION_COOKIE_NAME}=abc")
 
@@ -65,13 +68,27 @@ class AccountSessionClientTests(unittest.TestCase):
         self.assertEqual(_Handler.last_path, "/accounts/logout")
         self.assertEqual(_Handler.last_cookie, f"{SESSION_COOKIE_NAME}=tok")
 
+    def test_numeric_account_id_is_normalized_to_string(self):
+        _Handler.responses["GET /accounts/session"] = (200, {"authenticated": True, "id": 9})
+
+        result = self.client.get_session("abc")
+
+        self.assertEqual(result.account_id, "9")
+
+    def test_anonymous_session_omits_cookie_and_account(self):
+        result = self.client.get_session(None)
+
+        self.assertFalse(result.authenticated)
+        self.assertIsNone(result.account_id)
+        self.assertIsNone(_Handler.last_cookie)
+
     def test_server_error_maps_to_unavailable(self):
         _Handler.responses["GET /accounts/session"] = (503, {"error": "down"})
-        with self.assertRaises(AccountServiceUnavailable):
+        with self.assertRaises(AccountApiUnavailable):
             self.client.get_session("x")
 
     def test_connection_failure_maps_to_unavailable(self):
         self.server.shutdown()
-        broken = AccountSessionClient(f"http://127.0.0.1:{self.port}", timeout_seconds=0.5)
-        with self.assertRaises(AccountServiceUnavailable):
+        broken = AccountApiClient(f"http://127.0.0.1:{self.port}", timeout_seconds=0.5)
+        with self.assertRaises(AccountApiUnavailable):
             broken.get_session("x")

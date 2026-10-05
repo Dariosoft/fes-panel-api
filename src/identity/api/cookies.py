@@ -1,9 +1,9 @@
 from django.conf import settings
 from django.http import HttpResponse
 
+from common.contracts.account_api import SESSION_COOKIE_NAME
 from identity.domain.constants import (
     SESSION_COOKIE_EXPIRES_PAST,
-    SESSION_COOKIE_NAME,
     SESSION_COOKIE_PATH,
     SESSION_COOKIE_SAMESITE,
 )

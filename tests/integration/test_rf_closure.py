@@ -11,10 +11,10 @@ from django.urls import resolve
 from rest_framework.permissions import AllowAny
 from rest_framework.test import APIClient
 
+from common.contracts.account_api import SESSION_COOKIE_NAME
 from common.health.views import live, ready
+from common.infrastructure.clients import AccountApiClient
 from identity.api.views import GoogleLoginRedirectView, PanelSessionViewSet
-from identity.domain import SESSION_COOKIE_NAME
-from identity.infrastructure.account_session_client import AccountSessionClient
 
 
 class _AccountsHandler(BaseHTTPRequestHandler):
@@ -100,7 +100,7 @@ class RedirectAndBaseUrlTests(LiveAccountsServerMixin, SimpleTestCase):
             "email": "a@b.c",
             "name": "A",
         }
-        client = AccountSessionClient(self.accounts_base, timeout_seconds=2)
+        client = AccountApiClient(self.accounts_base, timeout_seconds=2)
         result = client.get_session("cookie")
         self.assertEqual(_AccountsHandler.last_path, "/accounts/session")
         self.assertEqual(result.body["authenticated"], True)

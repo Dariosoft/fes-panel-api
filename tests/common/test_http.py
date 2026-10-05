@@ -11,13 +11,27 @@ class _Handler(BaseHTTPRequestHandler):
     raw = b"{}"
     trace: str | None = None
     accept: str | None = None
+    request_body: bytes | None = None
+    request_content_type: str | None = None
 
     def log_message(self, *args) -> None:
         return
 
     def do_GET(self) -> None:
+        self._respond()
+
+    def do_POST(self) -> None:
+        self._respond()
+
+    def do_PUT(self) -> None:
+        self._respond()
+
+    def _respond(self) -> None:
         _Handler.trace = self.headers.get("X-Trace")
         _Handler.accept = self.headers.get("Accept")
+        _Handler.request_content_type = self.headers.get("Content-Type")
+        length = int(self.headers.get("Content-Length") or 0)
+        _Handler.request_body = self.rfile.read(length) if length else b""
         payload = _Handler.raw
         self.send_response(_Handler.status)
         self.send_header("Content-Type", "application/json")
@@ -32,6 +46,8 @@ class RequestJsonTests(unittest.TestCase):
         _Handler.raw = b"{}"
         _Handler.trace = None
         _Handler.accept = None
+        _Handler.request_body = None
+        _Handler.request_content_type = None
         self.server = HTTPServer(("127.0.0.1", 0), _Handler)
         self.port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
@@ -71,12 +87,14 @@ class RequestJsonTests(unittest.TestCase):
         with self.assertRaises(RemoteServiceError):
             request_json(self.base_url, call)
 
-    def test_json_array_is_remote_failure(self):
-        _Handler.raw = b"[1]"
+    def test_returns_json_array(self):
+        _Handler.raw = b'[{"id":"product-1"}]'
         call = JsonRequest("GET", "/list", 2)
 
-        with self.assertRaises(RemoteServiceError):
-            request_json(self.base_url, call)
+        status_code, body = request_json(self.base_url, call)
+
+        self.assertEqual(status_code, 200)
+        self.assertEqual(body, [{"id": "product-1"}])
 
     def test_invalid_json_is_remote_failure(self):
         _Handler.raw = b"not-json"
@@ -91,3 +109,32 @@ class RequestJsonTests(unittest.TestCase):
 
         with self.assertRaises(RemoteServiceError):
             request_json(self.base_url, call)
+
+    def test_forwards_body_and_content_type(self):
+        raw_body = b'{"name":"camisa"}'
+        call = JsonRequest(
+            "POST",
+            "/catalog/products",
+            2,
+            body=raw_body,
+            content_type="application/json",
+        )
+
+        status_code, body = request_json(self.base_url, call)
+
+        self.assertEqual(status_code, 200)
+        self.assertEqual(body, {})
+        self.assertEqual(_Handler.request_body, raw_body)
+        self.assertEqual(_Handler.request_content_type, "application/json")
+
+    def test_forwards_multipart_body_and_content_type(self):
+        raw_body = b'--boundary\r\nContent-Disposition: form-data; name="name"\r\n\r\ncamisa\r\n'
+        content_type = "multipart/form-data; boundary=boundary"
+        call = JsonRequest(
+            "PUT", "/catalog/products/1", 2, body=raw_body, content_type=content_type
+        )
+
+        request_json(self.base_url, call)
+
+        self.assertEqual(_Handler.request_body, raw_body)
+        self.assertEqual(_Handler.request_content_type, content_type)
