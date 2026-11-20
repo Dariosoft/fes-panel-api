@@ -30,7 +30,7 @@ jobs:
         uses: actions/add-to-project@v2
         with:
           project-url: https://github.com/orgs/Dariosoft/projects/2
-          github-token: esteesuntokenr3l0co
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
 
       - name: Update status
         uses: actions/github-script@v9
