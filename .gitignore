@@ -7,3 +7,5 @@ __pycache__/
 .ruff_cache/
 staticfiles/
 .DS_Store
+coverage.xml
+bom.json

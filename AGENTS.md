@@ -9,7 +9,11 @@ Persiste en la base `panel`, expone rutas bajo `/panel` y health checks, y se ej
 - Ejecutar: `python src/manage.py runserver 0.0.0.0:8000`
 - Lint/formato: `make lint`
 - Tests: `make test`
-- Verificación completa: `make verify`
+- Cobertura: `make coverage` genera `coverage.xml` y exige un mínimo de 90 % de líneas.
+- Verificación completa: `make verify` (lint, formato, checks de Django, migraciones y cobertura).
+- SonarQube: `sonar-project.properties` define el `projectKey`, la organización y el reporte de cobertura; el CI ejecuta `SonarSource/sonarqube-scan-action` con `SONAR_TOKEN` y espera el Quality Gate.
+- SBOM: `cyclonedx-py environment -o bom.json`; el CI lo escanea con Trivy.
+- Hook local: activar una vez por clon con `git config core.hooksPath .githooks`; bloquea commits con credenciales obvias.
 
 ## Estilo y convenciones
 - Usa Python 3.14, Django 5.2 LTS y DRF; el layout objetivo es código importable en `src/` y pruebas en `tests/`.
