@@ -156,8 +156,8 @@ error comun de catalogo. **(RF-4, RF-13, RF-15, RF-17, RF-22, RF-23, RF-24)**
 | `POST /panel/catalog/products` | `POST /catalog/products?ownerAccountId={id}` | RF-6, RF-24 |
 | `PUT /panel/catalog/products/{id}` | `PUT /catalog/products/{id}?ownerAccountId={id}` | RF-7, RF-24 |
 | `DELETE /panel/catalog/products/{id}` | `DELETE /catalog/products/{id}?ownerAccountId={id}` | RF-8 |
-| `POST .../{id}/publish` | `POST /catalog/products/{id}/publish?ownerAccountId={id}` | RF-9 |
-| `POST .../{id}/unpublish` | `POST /catalog/products/{id}/unpublish?ownerAccountId={id}` | RF-10 |
+| `POST .../{id}/publish` | `POST /catalog/publish/products/{id}?ownerAccountId={id}` | RF-9 |
+| `POST .../{id}/unpublish` | `POST /catalog/publish/products/{id}/unpublish?ownerAccountId={id}` | RF-10 |
 | `POST /panel/catalog/publish` | `POST /catalog/publish?ownerAccountId={id}` | RF-11, RF-25 |
 
 - Sin sesion valida: 401 y ninguna llamada a catalogo. **(RF-2, RF-3)**
