@@ -1,10 +1,11 @@
 Django==5.2.17
-djangorestframework==3.18.1
+djangorestframework==3.18.2
 django-cors-headers==4.9.0
 gunicorn==26.2.0
 psycopg[binary]==3.3.6
-opentelemetry-distro==0.65b0
-opentelemetry-exporter-otlp==1.44.0
-opentelemetry-instrumentation-django==0.65b0
-opentelemetry-instrumentation-logging==0.65b0
-opentelemetry-instrumentation-psycopg==0.65b0
+certifi==2026.10.18
+opentelemetry-distro==0.66b2
+opentelemetry-exporter-otlp==1.45.2
+opentelemetry-instrumentation-django==0.66b2
+opentelemetry-instrumentation-logging==0.66b2
+opentelemetry-instrumentation-psycopg==0.66b2
