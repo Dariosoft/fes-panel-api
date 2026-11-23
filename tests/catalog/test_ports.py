@@ -38,10 +38,10 @@ class FakeCatalogGateway:
     def delete_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         return self._response()
 
-    def publish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
+    def publish(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         return self._response()
 
-    def unpublish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
+    def unpublish(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         return self._response()
 
     def publish_catalog(

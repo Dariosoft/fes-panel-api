@@ -7,7 +7,7 @@ from catalog.api.panel_session import PanelSessionGuardMixin
 from catalog.use_cases import publish_catalog
 
 
-class PanelCatalogPublishView(PanelSessionGuardMixin, APIView):
+class PanelPublishCatalogView(PanelSessionGuardMixin, APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 

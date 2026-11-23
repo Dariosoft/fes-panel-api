@@ -35,11 +35,11 @@ class _CatalogGateway:
     def delete_product(self, owner_account_id, product_id):
         return self._record("delete_product", owner_account_id, product_id)
 
-    def publish_product(self, owner_account_id, product_id):
-        return self._record("publish_product", owner_account_id, product_id)
+    def publish(self, owner_account_id, product_id):
+        return self._record("publish", owner_account_id, product_id)
 
-    def unpublish_product(self, owner_account_id, product_id):
-        return self._record("unpublish_product", owner_account_id, product_id)
+    def unpublish(self, owner_account_id, product_id):
+        return self._record("unpublish", owner_account_id, product_id)
 
     def publish_catalog(self, owner_account_id, body, content_type):
         return self._record("publish_catalog", owner_account_id, body, content_type)
@@ -96,15 +96,15 @@ class PanelCatalogOperationTests(SimpleTestCase):
         self._run("delete", "/panel/catalog/products/p1", catalog)
         self.assertEqual(catalog.calls, [("delete_product", "acc-session", "p1")])
 
-    def test_publish_product_forwards_owner_and_id(self):
+    def test_publish_forwards_owner_and_id(self):
         catalog = _CatalogGateway()
         self._run("post", "/panel/catalog/products/p1/publish", catalog)
-        self.assertEqual(catalog.calls, [("publish_product", "acc-session", "p1")])
+        self.assertEqual(catalog.calls, [("publish", "acc-session", "p1")])
 
-    def test_unpublish_product_forwards_owner_and_id(self):
+    def test_unpublish_forwards_owner_and_id(self):
         catalog = _CatalogGateway()
         self._run("post", "/panel/catalog/products/p1/unpublish", catalog)
-        self.assertEqual(catalog.calls, [("unpublish_product", "acc-session", "p1")])
+        self.assertEqual(catalog.calls, [("unpublish", "acc-session", "p1")])
 
     def test_publish_catalog_forwards_owner_and_body(self):
         catalog = _CatalogGateway(response=ServiceResponse(status_code=200, body={"published": 2}))

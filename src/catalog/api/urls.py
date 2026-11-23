@@ -1,6 +1,6 @@
 from django.urls import path
 
-from catalog.api.views import PanelCatalogProductViewSet, PanelCatalogPublishView
+from catalog.api.views import PanelCatalogProductViewSet, PanelPublishCatalogView
 
 urlpatterns = [
     path(
@@ -25,7 +25,7 @@ urlpatterns = [
     ),
     path(
         "publish",
-        PanelCatalogPublishView.as_view(),
-        name="panel-catalog-publish",
+        PanelPublishCatalogView.as_view(),
+        name="panel-publish-catalog",
     ),
 ]

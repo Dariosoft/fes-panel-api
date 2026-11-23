@@ -27,10 +27,10 @@ class CatalogApiGateway(Protocol):
     def delete_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         """Delete a product owned by the session account."""
 
-    def publish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
+    def publish(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         """Publish a product owned by the session account."""
 
-    def unpublish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
+    def unpublish(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         """Unpublish a product owned by the session account."""
 
     def publish_catalog(

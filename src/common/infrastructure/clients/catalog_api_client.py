@@ -44,11 +44,11 @@ class CatalogApiClient:
         path = CATALOG_PRODUCT_ITEM_PATH.format(product_id=product_id)
         return self._send("DELETE", path, owner_account_id)
 
-    def publish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
+    def publish(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         path = CATALOG_PRODUCT_PUBLISH_PATH.format(product_id=product_id)
         return self._send("POST", path, owner_account_id)
 
-    def unpublish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
+    def unpublish(self, owner_account_id: str, product_id: str) -> ServiceResponse:
         path = CATALOG_PRODUCT_UNPUBLISH_PATH.format(product_id=product_id)
         return self._send("POST", path, owner_account_id)
 

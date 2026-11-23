@@ -156,9 +156,9 @@ error comun de catalogo. **(RF-4, RF-13, RF-15, RF-17, RF-22, RF-23, RF-24)**
 | `POST /panel/catalog/products` | `POST /catalog/products?ownerAccountId={id}` | RF-6, RF-24 |
 | `PUT /panel/catalog/products/{id}` | `PUT /catalog/products/{id}?ownerAccountId={id}` | RF-7, RF-24 |
 | `DELETE /panel/catalog/products/{id}` | `DELETE /catalog/products/{id}?ownerAccountId={id}` | RF-8 |
-| `POST .../{id}/publish` | `POST /catalog/publish/products/{id}?ownerAccountId={id}` | RF-9 |
-| `POST .../{id}/unpublish` | `POST /catalog/publish/products/{id}/unpublish?ownerAccountId={id}` | RF-10 |
-| `POST /panel/catalog/publish` | `POST /catalog/publish?ownerAccountId={id}` | RF-11, RF-25 |
+| `POST .../{id}/publish` | `POST /catalog/publication/publish/{id}?ownerAccountId={id}` | RF-9 |
+| `POST .../{id}/unpublish` | `POST /catalog/publication/unpublish/{id}?ownerAccountId={id}` | RF-10 |
+| `POST /panel/catalog/publish` | `POST /catalog/publication/publish-catalog?ownerAccountId={id}` | RF-11, RF-25 |
 
 - Sin sesion valida: 401 y ninguna llamada a catalogo. **(RF-2, RF-3)**
 - Cuentas no disponible: 503 y ninguna llamada a catalogo. **(RF-14)**
@@ -192,7 +192,7 @@ error comun de catalogo. **(RF-4, RF-13, RF-15, RF-17, RF-22, RF-23, RF-24)**
 | `tests/catalog/test_use_cases.py` | Operaciones con `AccountSession` y `ServiceResponse` |
 | `tests/catalog/test_panel_session_guard.py` | 401/503, owner y errores comunes |
 | `tests/catalog/test_panel_catalog_product_viewset.py` | Operaciones, name, multipart y proxy de respuesta |
-| `tests/catalog/test_panel_catalog_publish_view.py` | Publish, cuerpo JSON default y conteo cero |
+| `tests/catalog/test_panel_publish_catalog_view.py` | Publish, cuerpo JSON default y conteo cero |
 | `tests/integration/` | Rutas, CORS, health y frontera completa con fakes comunes |
 
 Verificacion del corte: `make verify` verde, **112 tests**, sin migraciones.

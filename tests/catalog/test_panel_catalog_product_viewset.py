@@ -38,11 +38,11 @@ class _CatalogGateway:
     def delete_product(self, owner_account_id, product_id):
         return self._record("delete_product", owner_account_id, product_id)
 
-    def publish_product(self, owner_account_id, product_id):
-        return self._record("publish_product", owner_account_id, product_id)
+    def publish(self, owner_account_id, product_id):
+        return self._record("publish", owner_account_id, product_id)
 
-    def unpublish_product(self, owner_account_id, product_id):
-        return self._record("unpublish_product", owner_account_id, product_id)
+    def unpublish(self, owner_account_id, product_id):
+        return self._record("unpublish", owner_account_id, product_id)
 
 
 class PanelCatalogProductViewSetTests(SimpleTestCase):
@@ -174,7 +174,7 @@ class PanelCatalogProductViewSetTests(SimpleTestCase):
 
         self.assertEqual(
             gateway.calls,
-            [("publish_product", "acc-1", "p9"), ("unpublish_product", "acc-1", "p9")],
+            [("publish", "acc-1", "p9"), ("unpublish", "acc-1", "p9")],
         )
 
     def test_catalog_error_is_unavailable(self):
