@@ -119,8 +119,8 @@ classDiagram
     +create_product(owner, body, content_type) ServiceResponse
     +update_product(owner, id, body, content_type) ServiceResponse
     +delete_product(owner, id) ServiceResponse
-    +publish_product(owner, id) ServiceResponse
-    +unpublish_product(owner, id) ServiceResponse
+    +publish(owner, id) ServiceResponse
+    +unpublish(owner, id) ServiceResponse
     +publish_catalog(owner, body, content_type) ServiceResponse
   }
   class AccountApiClient {
@@ -132,8 +132,8 @@ classDiagram
     +create_product(owner, body, content_type) ServiceResponse
     +update_product(owner, id, body, content_type) ServiceResponse
     +delete_product(owner, id) ServiceResponse
-    +publish_product(owner, id) ServiceResponse
-    +unpublish_product(owner, id) ServiceResponse
+    +publish(owner, id) ServiceResponse
+    +unpublish(owner, id) ServiceResponse
     +publish_catalog(owner, body, content_type) ServiceResponse
   }
   class AccountSession {
@@ -275,7 +275,7 @@ sequenceDiagram
     View->>UC: publish_catalog(owner, body, content_type)
     UC->>Port: publish_catalog(owner, body, content_type)
     Port->>Client: implementacion compuesta
-    Client->>Catalog: POST /catalog/publish?ownerAccountId={owner} + {}
+    Client->>Catalog: POST /catalog/publication/publish-catalog?ownerAccountId={owner} + {}
   end
   Catalog-->>Client: status + body
   Client-->>View: ServiceResponse

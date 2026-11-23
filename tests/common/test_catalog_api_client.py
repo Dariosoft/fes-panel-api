@@ -116,14 +116,14 @@ class CatalogApiClientTests(unittest.TestCase):
         self.assertEqual(_Handler.last_path, "/catalog/products/p9")
         self.assertEqual(_Handler.last_query["ownerAccountId"], ["acc-1"])
 
-    def test_publish_and_unpublish_product_paths(self):
-        self.client.publish_product("acc-1", "p9")
+    def test_publish_and_unpublish_paths(self):
+        self.client.publish("acc-1", "p9")
         self.assertEqual(_Handler.last_method, "POST")
-        self.assertEqual(_Handler.last_path, "/catalog/products/p9/publish")
+        self.assertEqual(_Handler.last_path, "/catalog/publication/publish/p9")
         self.assertEqual(_Handler.last_query["ownerAccountId"], ["acc-1"])
 
-        self.client.unpublish_product("acc-1", "p9")
-        self.assertEqual(_Handler.last_path, "/catalog/products/p9/unpublish")
+        self.client.unpublish("acc-1", "p9")
+        self.assertEqual(_Handler.last_path, "/catalog/publication/unpublish/p9")
         self.assertEqual(_Handler.last_query["ownerAccountId"], ["acc-1"])
 
     def test_publish_catalog_forwards_body(self):
@@ -132,7 +132,7 @@ class CatalogApiClientTests(unittest.TestCase):
         self.client.publish_catalog("acc-1", raw_body, "application/json")
 
         self.assertEqual(_Handler.last_method, "POST")
-        self.assertEqual(_Handler.last_path, "/catalog/publish")
+        self.assertEqual(_Handler.last_path, "/catalog/publication/publish-catalog")
         self.assertEqual(_Handler.last_query["ownerAccountId"], ["acc-1"])
         self.assertEqual(_Handler.last_body, raw_body)
 

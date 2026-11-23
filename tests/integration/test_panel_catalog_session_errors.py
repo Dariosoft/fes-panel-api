@@ -45,11 +45,11 @@ class _CatalogGateway:
     def delete_product(self, owner_account_id, product_id):
         return self._record("delete_product", owner_account_id, product_id)
 
-    def publish_product(self, owner_account_id, product_id):
-        return self._record("publish_product", owner_account_id, product_id)
+    def publish(self, owner_account_id, product_id):
+        return self._record("publish", owner_account_id, product_id)
 
-    def unpublish_product(self, owner_account_id, product_id):
-        return self._record("unpublish_product", owner_account_id, product_id)
+    def unpublish(self, owner_account_id, product_id):
+        return self._record("unpublish", owner_account_id, product_id)
 
     def publish_catalog(self, owner_account_id, body, content_type):
         return self._record("publish_catalog", owner_account_id, body, content_type)

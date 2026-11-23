@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from django.test import RequestFactory, SimpleTestCase
 
-from catalog.api.views import PanelCatalogPublishView
+from catalog.api.views import PanelPublishCatalogView
 from common.contracts.account_api import SESSION_COOKIE_NAME
 from common.dtos import AccountSession, ServiceResponse
 from common.errors import CatalogApiUnavailable
@@ -34,26 +34,26 @@ class _CatalogGateway:
         return self._response
 
 
-class PanelCatalogPublishViewTests(SimpleTestCase):
+class PanelPublishCatalogViewTests(SimpleTestCase):
     def setUp(self):
         self.factory = RequestFactory()
 
     def _post(self, catalog_gateway, session_gateway=None, cookie="tok"):
         request = self.factory.post(
-            "/catalog/publish",
+            "/panel/catalog/publish",
             data=b'{"products":[]}',
             content_type="application/json",
             HTTP_COOKIE=f"{SESSION_COOKIE_NAME}={cookie}" if cookie else "",
         )
         with (
             patch.object(
-                PanelCatalogPublishView,
+                PanelPublishCatalogView,
                 "_session_gateway",
                 return_value=session_gateway or _SessionGateway(),
             ),
-            patch.object(PanelCatalogPublishView, "_catalog_gateway", return_value=catalog_gateway),
+            patch.object(PanelPublishCatalogView, "_catalog_gateway", return_value=catalog_gateway),
         ):
-            return PanelCatalogPublishView.as_view()(request)
+            return PanelPublishCatalogView.as_view()(request)
 
     def test_forwards_body_and_owner_and_propagates_count(self):
         gateway = _CatalogGateway(response=ServiceResponse(status_code=200, body={"published": 0}))
@@ -70,7 +70,7 @@ class PanelCatalogPublishViewTests(SimpleTestCase):
     def test_publish_defaults_to_json_when_body_is_absent(self):
         gateway = _CatalogGateway()
         request = self.factory.post(
-            "/catalog/publish",
+            "/panel/catalog/publish",
             data=b"",
             content_type="text/plain",
             HTTP_COOKIE=f"{SESSION_COOKIE_NAME}=tok",
@@ -78,11 +78,11 @@ class PanelCatalogPublishViewTests(SimpleTestCase):
         request.META["CONTENT_TYPE"] = ""
         with (
             patch.object(
-                PanelCatalogPublishView, "_session_gateway", return_value=_SessionGateway()
+                PanelPublishCatalogView, "_session_gateway", return_value=_SessionGateway()
             ),
-            patch.object(PanelCatalogPublishView, "_catalog_gateway", return_value=gateway),
+            patch.object(PanelPublishCatalogView, "_catalog_gateway", return_value=gateway),
         ):
-            response = PanelCatalogPublishView.as_view()(request)
+            response = PanelPublishCatalogView.as_view()(request)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(gateway.calls, [("publish_catalog", "acc-1", b"{}", "application/json")])

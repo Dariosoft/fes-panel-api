@@ -1,7 +1,7 @@
 from django.test import SimpleTestCase
 from django.urls import resolve
 
-from catalog.api.views import PanelCatalogProductViewSet, PanelCatalogPublishView
+from catalog.api.views import PanelCatalogProductViewSet, PanelPublishCatalogView
 from common.health.views import live, ready
 
 
@@ -19,7 +19,7 @@ class PanelCatalogUrlTests(SimpleTestCase):
         self.assertEqual(match.func.actions["delete"], "destroy")
         self.assertEqual(match.kwargs, {"product_id": "p1"})
 
-    def test_publish_and_unpublish_product_routes(self):
+    def test_publish_and_unpublish_routes(self):
         publish = resolve("/panel/catalog/products/p1/publish")
         self.assertEqual(publish.func.actions, {"post": "publish"})
         self.assertEqual(publish.kwargs, {"product_id": "p1"})
@@ -29,7 +29,7 @@ class PanelCatalogUrlTests(SimpleTestCase):
 
     def test_publish_catalog_route(self):
         match = resolve("/panel/catalog/publish")
-        self.assertIs(match.func.cls, PanelCatalogPublishView)
+        self.assertIs(match.func.cls, PanelPublishCatalogView)
 
     def test_identity_routes_are_preserved(self):
         self.assertEqual(resolve("/panel/identity/session").url_name, "panel-session")

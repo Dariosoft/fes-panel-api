@@ -4,10 +4,10 @@ from catalog.use_cases import (
     create_product,
     delete_product,
     list_products,
+    publish,
     publish_catalog,
-    publish_product,
     resolve_panel_owner,
-    unpublish_product,
+    unpublish,
     update_product,
 )
 from common.dtos import AccountSession, ServiceResponse
@@ -87,12 +87,12 @@ class _CatalogGateway:
         self.calls.append(("delete_product", owner_account_id, product_id))
         return self._response
 
-    def publish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
-        self.calls.append(("publish_product", owner_account_id, product_id))
+    def publish(self, owner_account_id: str, product_id: str) -> ServiceResponse:
+        self.calls.append(("publish", owner_account_id, product_id))
         return self._response
 
-    def unpublish_product(self, owner_account_id: str, product_id: str) -> ServiceResponse:
-        self.calls.append(("unpublish_product", owner_account_id, product_id))
+    def unpublish(self, owner_account_id: str, product_id: str) -> ServiceResponse:
+        self.calls.append(("unpublish", owner_account_id, product_id))
         return self._response
 
     def publish_catalog(
@@ -141,15 +141,15 @@ class ProductUseCasesTests(unittest.TestCase):
         delete_product(gateway, "acc-1", "p9")
         self.assertEqual(gateway.calls, [("delete_product", "acc-1", "p9")])
 
-    def test_publish_product_forwards_owner_and_id(self):
+    def test_publish_forwards_owner_and_id(self):
         gateway = _CatalogGateway()
-        publish_product(gateway, "acc-1", "p9")
-        self.assertEqual(gateway.calls, [("publish_product", "acc-1", "p9")])
+        publish(gateway, "acc-1", "p9")
+        self.assertEqual(gateway.calls, [("publish", "acc-1", "p9")])
 
-    def test_unpublish_product_forwards_owner_and_id(self):
+    def test_unpublish_forwards_owner_and_id(self):
         gateway = _CatalogGateway()
-        unpublish_product(gateway, "acc-1", "p9")
-        self.assertEqual(gateway.calls, [("unpublish_product", "acc-1", "p9")])
+        unpublish(gateway, "acc-1", "p9")
+        self.assertEqual(gateway.calls, [("unpublish", "acc-1", "p9")])
 
     def test_publish_catalog_forwards_owner_and_body(self):
         gateway = _CatalogGateway()

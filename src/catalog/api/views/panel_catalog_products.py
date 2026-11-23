@@ -8,8 +8,8 @@ from catalog.use_cases import (
     create_product,
     delete_product,
     list_products,
-    publish_product,
-    unpublish_product,
+    publish,
+    unpublish,
     update_product,
 )
 
@@ -49,11 +49,7 @@ class PanelCatalogProductViewSet(PanelSessionGuardMixin, ViewSet):
         )
 
     def publish(self, request: Request, product_id: str) -> Response:
-        return self._forward(
-            lambda gateway: publish_product(gateway, self.owner_account_id, product_id)
-        )
+        return self._forward(lambda gateway: publish(gateway, self.owner_account_id, product_id))
 
     def unpublish(self, request: Request, product_id: str) -> Response:
-        return self._forward(
-            lambda gateway: unpublish_product(gateway, self.owner_account_id, product_id)
-        )
+        return self._forward(lambda gateway: unpublish(gateway, self.owner_account_id, product_id))
