@@ -3,11 +3,12 @@ from typing import Any, cast
 from common.contracts.account_api import (
     ACCOUNT_LOGOUT_PATH,
     ACCOUNT_SESSION_PATH,
+    ACCOUNT_SHOP_PATH,
     SESSION_AUTHENTICATED_KEY,
     SESSION_COOKIE_NAME,
     SESSION_ID_KEY,
 )
-from common.dtos import AccountLogout, AccountSession
+from common.dtos import AccountLogout, AccountSession, ServiceResponse
 from common.errors import AccountApiUnavailable
 from common.http import JsonRequest, RemoteServiceError, request_json
 
@@ -36,11 +37,44 @@ class AccountApiClient:
             had_active_session=bool(fes_session),
         )
 
-    def _request(self, method: str, path: str, fes_session: str | None):
+    def get_shop(self, fes_session: str | None) -> ServiceResponse:
+        status_code, response_body = self._request("GET", ACCOUNT_SHOP_PATH, fes_session)
+        return ServiceResponse(status_code=status_code, body=response_body)
+
+    def save_shop(
+        self,
+        fes_session: str | None,
+        body: bytes,
+        content_type: str | None,
+    ) -> ServiceResponse:
+        status_code, response_body = self._request(
+            "PUT",
+            ACCOUNT_SHOP_PATH,
+            fes_session,
+            body=body,
+            content_type=content_type,
+        )
+        return ServiceResponse(status_code=status_code, body=response_body)
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        fes_session: str | None,
+        body: bytes | None = None,
+        content_type: str | None = None,
+    ):
         headers: dict[str, str] = {}
         if fes_session:
             headers["Cookie"] = f"{SESSION_COOKIE_NAME}={fes_session}"
-        call = JsonRequest(method, path, self._timeout_seconds, headers)
+        call = JsonRequest(
+            method,
+            path,
+            self._timeout_seconds,
+            headers,
+            body=body,
+            content_type=content_type,
+        )
         try:
             return request_json(self._base_url, call)
         except RemoteServiceError as exc:
