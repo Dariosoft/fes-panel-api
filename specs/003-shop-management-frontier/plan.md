@@ -53,7 +53,7 @@ panel-api/
 │   │   ├── apps.py                            # ShopsConfig(label="shops")
 │   │   ├── api/
 │   │   │   ├── __init__.py
-│   │   │   ├── urls.py                        # path("shop", PanelShopView, name="panel-shop")
+│   │   │   ├── urls.py                        # path("", PanelShopView.as_view(), name="panel-shop")
 │   │   │   └── views/
 │   │   │       ├── __init__.py
 │   │   │       └── panel_shop.py              # PanelShopView(APIView): get() y put()
@@ -63,7 +63,7 @@ panel-api/
 │   │       └── save_shop.py                   # save_shop(gateway, fes_session, body, content_type)
 │   └── config/
 │       ├── settings.py                        # + "shops" en INSTALLED_APPS
-│       └── urls.py                            # + path("panel/", include("shops.api.urls"))
+│       └── urls.py                            # + path("panel/shop", include("shops.api.urls"))
 └── tests/
     ├── shops/
     │   ├── __init__.py
