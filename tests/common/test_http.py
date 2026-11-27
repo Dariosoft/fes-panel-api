@@ -1,9 +1,10 @@
 import json
 import threading
 import unittest
+import urllib.error
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from common.http import JsonRequest, RemoteServiceError, request_json
+from common.http import JsonRequest, RemoteServiceError, is_timeout_error, request_json
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -138,3 +139,26 @@ class RequestJsonTests(unittest.TestCase):
 
         self.assertEqual(_Handler.request_body, raw_body)
         self.assertEqual(_Handler.request_content_type, content_type)
+
+
+class IsTimeoutErrorTests(unittest.TestCase):
+    def test_direct_timeout_error_is_timeout(self):
+        self.assertTrue(is_timeout_error(TimeoutError()))
+
+    def test_url_error_with_timeout_reason_is_timeout(self):
+        self.assertTrue(is_timeout_error(urllib.error.URLError(TimeoutError())))
+
+    def test_chained_timeout_is_timeout(self):
+        try:
+            try:
+                raise TimeoutError
+            except TimeoutError as cause:
+                raise RemoteServiceError from cause
+        except RemoteServiceError as exc:
+            self.assertTrue(is_timeout_error(exc))
+
+    def test_non_timeout_error_is_not_timeout(self):
+        self.assertFalse(is_timeout_error(RemoteServiceError()))
+
+    def test_plain_os_error_is_not_timeout(self):
+        self.assertFalse(is_timeout_error(OSError("boom")))

@@ -24,6 +24,15 @@ CATALOG_API_BASE_URL = os.environ.get(
     "http://catalog-api.apps.svc.cluster.local:8080",
 ).rstrip("/")
 CATALOG_API_TIMEOUT_SECONDS = float(os.environ.get("CATALOG_API_TIMEOUT_SECONDS", "5"))
+ANALYTICS_API_BASE_URL = os.environ.get(
+    "ANALYTICS_API_BASE_URL",
+    "http://analytics-api.apps.svc.cluster.local:8080",
+).rstrip("/")
+ANALYTICS_API_TIMEOUT_SECONDS = float(os.environ.get("ANALYTICS_API_TIMEOUT_SECONDS", "5"))
+NOTIFICATIONS_API_BASE_URL = os.environ.get(
+    "NOTIFICATIONS_API_BASE_URL",
+    "http://notifications-api.apps.svc.cluster.local:8080",
+).rstrip("/")
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -33,6 +42,8 @@ INSTALLED_APPS = [
     "identity",
     "catalog",
     "shops",
+    "analytics",
+    "notifications",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
