@@ -6,6 +6,8 @@ urlpatterns = [
     path("panel/identity/", include("identity.api.urls")),
     path("panel/catalog/", include("catalog.api.urls")),
     path("panel/shop", include("shops.api.urls")),
+    path("panel/analytics/", include("analytics.api.urls")),
+    path("panel/notifications/", include("notifications.api.urls")),
     path("health/live", live),
     path("health/ready", ready),
 ]

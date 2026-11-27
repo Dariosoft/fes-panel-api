@@ -49,6 +49,19 @@ def _read_body(
         return response.getcode(), response.read().decode("utf-8")
 
 
+def is_timeout_error(exc: BaseException) -> bool:
+    current: BaseException | None = exc
+    for _ in range(5):
+        if current is None:
+            return False
+        if isinstance(current, TimeoutError):
+            return True
+        if isinstance(current, urllib.error.URLError) and isinstance(current.reason, TimeoutError):
+            return True
+        current = current.__cause__ or current.__context__
+    return False
+
+
 def _json_body(raw: str) -> JsonBody:
     try:
         body = json.loads(raw) if raw else {}
